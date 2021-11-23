@@ -111,7 +111,7 @@ const Item: React.FC<ItemProps> = ({ item, number, onNumberChange }) => (
       image={ item.img }
       sx={{ flex: "1 1 0", alignSelf: "stretch", objectFit: "contain", background: "black" }}
     />
-    <CardContent sx={{ flex: "2 1 0", alignSelf: "center", display: "flex", flexDirection: "column", gap: 1 }}>
+    <CardContent sx={{ flex: "3 1 0", alignSelf: "center", display: "flex", flexDirection: "column", gap: 1 }}>
       <Typography component="b" sx={{ fontWeight: "bold" }}>
         { item.name }
       </Typography>
