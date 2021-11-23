@@ -14,19 +14,13 @@ type EventType = {
   code: string,
   name: string,
   items: Item[],
-  prices: Price[],
 };
 
 type Item = {
   id: number,
   name: string,
   img?: string,
-};
-
-type Price = {
-  id: number,
-  items: number[],
-  value: number,
+  unitPrice: number,
 };
 
 type EventPageState = {
@@ -84,7 +78,11 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
   }
 
   totalAmount(): number {
-    return 0;
+    return (
+      this.props.event.items
+      .map(item => item.unitPrice * this.state.numbers.get(item.id)!)
+      .reduce((a, b) => a + b)
+    );
   }
 
   numberChanged = (id: number, newValue: number) => {
