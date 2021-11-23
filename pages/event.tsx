@@ -54,7 +54,7 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
           <Grid container spacing={1} alignItems="stretch">
             {
               event.items.map(item => (
-                <Grid item key={ item.id } xs={12} sm={6} md={4} lg={3}>
+                <Grid item key={ item.id } xs={12} md={6} lg={4} xl={3}>
                   <Item
                     item={ item }
                     number={ this.state.numbers.get(item.id)! }
@@ -160,7 +160,7 @@ const ItemNumberInputButton = (props: ButtonProps) => (
   <Button
     variant="outlined"
     {...props}
-    sx={{ minWidth: 0, fontSize: "1.5em", lineHeight: "normal", padding: 0.5, ...props.sx }}
+    sx={{ minWidth: 0, fontSize: "1.5em", lineHeight: "normal", px: 0.5, py: 1, ...props.sx }}
   />
 );
 
