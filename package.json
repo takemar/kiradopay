@@ -13,6 +13,7 @@
     "@fontsource/roboto": "^4.5.1",
     "@mui/icons-material": "^5.1.1",
     "@mui/material": "^5.1.1",
+    "@prisma/client": "^3.5.0",
     "next": "12.0.4",
     "react": "17.0.2",
     "react-dom": "17.0.2"
@@ -22,6 +23,10 @@
     "@types/react": "17.0.35",
     "eslint": "7",
     "eslint-config-next": "12.0.4",
+    "prisma": "^3.5.0",
     "typescript": "4.5.2"
+  },
+  "prisma": {
+    "schema": "db/prisma/schema.prisma"
   }
 }

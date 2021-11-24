@@ -1,0 +1,53 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:../db.sqlite3"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Event {
+  id              Int           @id @default(autoincrement())
+  code            String        @unique
+  name            String
+  date            DateTime
+  items           Item[]
+  salesRecords    SalesRecord[]
+  openningClients Client[]      @relation("clients_to_events")
+
+  @@map("events")
+}
+
+model Item {
+  id           Int           @id @default(autoincrement())
+  name         String
+  img          String?
+  unitPrice    Int
+  event        Event         @relation(fields: [eventId], references: [id])
+  eventId      Int           @map("event_id")
+  salesRecords SalesRecord[] @relation("items_to_sales_records")
+
+  @@map("items")
+}
+
+model SalesRecord {
+  id        String   @id
+  timestamp DateTime
+  event     Event    @relation(fields: [eventId], references: [id])
+  eventId   Int      @map("event_id")
+  items     Item[]   @relation("items_to_sales_records")
+  client    Client   @relation(fields: [clientId], references: [id])
+  clientId  Int      @map("client_id")
+
+  @@map("sales_records")
+}
+
+model Client {
+  id             Int           @id @default(autoincrement())
+  name           String        @unique
+  openningEvents Event[]       @relation("clients_to_events")
+  salesRecords   SalesRecord[]
+
+  @@map("clients")
+}
