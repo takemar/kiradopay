@@ -1,31 +1,35 @@
 import React from "react";
-import { GetStaticProps } from "next";
+import { GetServerSideProps } from "next";
+import { PrismaClient } from "@prisma/client";
+import type { Event, Item } from "@prisma/client";
 import { AppBar, Box, Card, CardContent, CardMedia, Container, Grid, IconButton, Toolbar, Typography } from "@mui/material";
 import Button, { ButtonProps } from "@mui/material/Button"
 import { Menu as MenuIcon } from "@mui/icons-material";
-import event from "./tmp.json";
 
 type EventPageProps = {
-  event: EventType
-};
-
-type EventType = {
-  id: number,
-  code: string,
-  name: string,
-  items: Item[],
-};
-
-type Item = {
-  id: number,
-  name: string,
-  img?: string,
-  unitPrice: number,
+  event: Event & { items: Item[] }
 };
 
 type EventPageState = {
   numbers: Map<number, number>,
 }
+
+export const getServerSideProps: GetServerSideProps<EventPageProps> = async ({ params }) => {
+  const prisma = new PrismaClient();
+  const event = await prisma.event.findUnique({
+    where: { code: params!.code as string },
+    include: { items: true }
+  })
+  if (event) {
+    return ({
+      props: { event },
+    });
+  } else {
+    return ({
+      notFound: true,
+    })
+  }
+};
 
 export default class EventPage extends React.Component<EventPageProps, EventPageState> {
 
@@ -43,7 +47,7 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
         <AppBar position="static">
           <Toolbar variant="dense">
             <Typography component="h1" sx={{ flexGrow: 1 }}>
-              { event.name }
+              { this.props.event.name }
             </Typography>
             <IconButton aria-label="menu" color="inherit">
               <MenuIcon />
@@ -53,9 +57,9 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
         <Container sx={{ flex: "auto", overflowY: "scroll" , py: 1 }}>
           <Grid container spacing={1} alignItems="stretch">
             {
-              event.items.map(item => (
+              this.props.event.items.map(item => (
                 <Grid item key={ item.id } xs={12} md={6} lg={4} xl={3}>
-                  <Item
+                  <ItemComponent
                     item={ item }
                     number={ this.state.numbers.get(item.id)! }
                     onNumberChange={ newValue => this.numberChanged(item.id, newValue) }
@@ -104,11 +108,11 @@ type ItemProps = {
   onNumberChange: (newValue: number) => void,
 };
 
-const Item: React.FC<ItemProps> = ({ item, number, onNumberChange }) => (
+const ItemComponent: React.FC<ItemProps> = ({ item, number, onNumberChange }) => (
   <Card sx={{ display: "flex", flexDirection: "row", height: "100%" }}>
     <CardMedia
       component="img"
-      image={ item.img }
+      image={ item.img || "about:blank" }
       sx={{ flex: "1 1 0", alignSelf: "stretch", objectFit: "contain", background: "black" }}
     />
     <CardContent sx={{ flex: "3 1 0", alignSelf: "center", display: "flex", flexDirection: "column", gap: 1 }}>
@@ -163,11 +167,3 @@ const ItemNumberInputButton = (props: ButtonProps) => (
     sx={{ minWidth: 0, fontSize: "1.5em", lineHeight: "normal", px: 0.5, py: 1, ...props.sx }}
   />
 );
-
-export const getStaticProps: GetStaticProps<EventPageProps> = async () => {
-  return {
-    props: {
-      event: event
-    }
-  };
-};
