@@ -20,27 +20,38 @@ model Event {
 }
 
 model Item {
-  id           Int           @id @default(autoincrement())
+  id           Int                   @id @default(autoincrement())
   name         String
   img          String?
   unitPrice    Int
-  event        Event         @relation(fields: [eventId], references: [id])
-  eventId      Int           @map("event_id")
-  salesRecords SalesRecord[] @relation("items_to_sales_records")
+  event        Event                 @relation(fields: [eventId], references: [id])
+  eventId      Int                   @map("event_id")
+  salesRecords ItemsOnSalesRecords[]
 
   @@map("items")
 }
 
 model SalesRecord {
-  id        String   @id
+  code      String                @id
   timestamp DateTime
-  event     Event    @relation(fields: [eventId], references: [id])
-  eventId   Int      @map("event_id")
-  items     Item[]   @relation("items_to_sales_records")
-  client    Client   @relation(fields: [clientId], references: [id])
-  clientId  Int      @map("client_id")
+  event     Event                 @relation(fields: [eventId], references: [id])
+  eventId   Int                   @map("event_id")
+  items     ItemsOnSalesRecords[]
+  client    Client                @relation(fields: [clientId], references: [id])
+  clientId  Int                   @map("client_id")
 
   @@map("sales_records")
+}
+
+model ItemsOnSalesRecords {
+  item            Item        @relation(fields: [itemId], references: [id])
+  itemId          Int         @map("item_id")
+  salesRecord     SalesRecord @relation(fields: [salesRecordCode], references: [code])
+  salesRecordCode String      @map("sales_record_code")
+  number          Int
+
+  @@id([itemId, salesRecordCode])
+  @@map("items_on_sales_records")
 }
 
 model Client {
