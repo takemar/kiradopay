@@ -1,7 +1,9 @@
 import React from "react";
 import { GetServerSideProps } from "next";
 import { PrismaClient } from "@prisma/client";
-import type { Event, Item } from "@prisma/client";
+import type { Event, Item, SalesRecord } from "@prisma/client";
+import { openDB } from "idb";
+import type { DBSchema, IDBPDatabase } from "idb";
 import { AppBar, Box, Card, CardContent, CardMedia, Container, Grid, IconButton, Toolbar, Typography } from "@mui/material";
 import Button, { ButtonProps } from "@mui/material/Button"
 import { Menu as MenuIcon } from "@mui/icons-material";
@@ -31,7 +33,16 @@ export const getServerSideProps: GetServerSideProps<EventPageProps> = async ({ p
   }
 };
 
+interface DB extends DBSchema {
+  sales_records: {
+    key: string,
+    value: Omit<SalesRecord, "clientId"> & { items: { itemId: number, number: number }[] },
+  }
+}
+
 export default class EventPage extends React.Component<EventPageProps, EventPageState> {
+
+  db: PromiseLike<IDBPDatabase> & { open: (...args: Parameters<typeof openDB>) => PromiseLike<IDBPDatabase>};
 
   constructor(props: EventPageProps) {
     super(props);
@@ -39,6 +50,40 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
     this.state = {
       numbers: new Map(props.event.items.map(item => [item.id, 0]))
     };
+
+    this.db = new class {
+
+      promise: Promise<IDBPDatabase>;
+      resolve?: (value: Promise<IDBPDatabase>) => void;
+
+      constructor() {
+        this.promise = new Promise<IDBPDatabase>(resolve => {
+          this.resolve = resolve;
+        });
+      }
+
+      then<T, U>(
+        onFulfilled?: ((value: IDBPDatabase) => T | PromiseLike<T>) | undefined | null,
+        onRejected?: ((reason: any) => U | PromiseLike<U>) | undefined | null
+      ): Promise<T | U> {
+        return this.promise.then(onFulfilled, onRejected);
+      }
+
+      open(...args: Parameters<(typeof openDB)>): this {
+        this.resolve!(openDB(...args));
+        return this;
+      }
+    };
+  }
+
+  componentDidMount() {
+    this.db.open("kiradopay", 1, {
+      upgrade(db, oldVersion, _newVersion, _transaction) {
+        if (oldVersion < 1) {
+          db.createObjectStore("sales_records", { keyPath: "code" });
+        }
+      }
+    });
   }
 
   render() {
@@ -96,9 +141,30 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
   }
 
   registered = () => {
+    const items = (
+      Array.from(this.state.numbers)
+      .map(([itemId, number]) => ({ itemId, number }))
+      .filter(({ number }) => number !== 0)
+    );
+
+    if (items.length === 0) {
+      return;
+    }
+
+    const salesRecord = {
+      code: randomUUID(),
+      timestamp: new Date(),
+      eventId: this.props.event.id,
+      items
+    };
+
+    (async () => {
+      ((await this.db) as IDBPDatabase<DB>).add("sales_records", salesRecord);
+    })();
+
     this.setState({
       numbers: new Map(this.props.event.items.map(item => [item.id, 0]))
-    })
+    });
   }
 };
 
@@ -167,3 +233,16 @@ const ItemNumberInputButton = (props: ButtonProps) => (
     sx={{ minWidth: 0, fontSize: "1.5em", lineHeight: "normal", px: 0.5, py: 1, ...props.sx }}
   />
 );
+
+function randomUUID() {
+  if (!("randomUUID" in crypto)) {
+    crypto.randomUUID = function randomUUID() {
+      const randomValues = crypto.getRandomValues(new Uint16Array(8));
+      randomValues[3] = (randomValues[3] & 0x0fff) | 0x4000;
+      randomValues[4] = (randomValues[4] & 0x3fff) | 0x8000;
+      const hex = Array.from(randomValues).map(x => x.toString(16))
+      return `${ hex[0] }${ hex[1] }-${ hex[2] }-${ hex[3] }-${ hex[4] }-${ hex[5] }${ hex[6] }${ hex[7] }`;
+    }
+  }
+  return crypto.randomUUID!();
+}
