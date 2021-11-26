@@ -2,11 +2,12 @@ import React from "react";
 import { GetServerSideProps } from "next";
 import { PrismaClient } from "@prisma/client";
 import type { Event, Item, SalesRecord } from "@prisma/client";
-import { openDB } from "idb";
-import type { DBSchema, IDBPDatabase } from "idb";
 import { AppBar, Box, Card, CardContent, CardMedia, Container, Grid, IconButton, Toolbar, Typography } from "@mui/material";
 import Button, { ButtonProps } from "@mui/material/Button"
 import { Menu as MenuIcon } from "@mui/icons-material";
+import { openDB } from "idb";
+import type { DBSchema, IDBPDatabase } from "idb";
+import { PromiseProperty } from "../../PromisePropery";
 
 type EventPageProps = {
   event: Event & { items: Item[] }
@@ -42,7 +43,9 @@ interface DB extends DBSchema {
 
 export default class EventPage extends React.Component<EventPageProps, EventPageState> {
 
-  db: PromiseLike<IDBPDatabase> & { open: (...args: Parameters<typeof openDB>) => PromiseLike<IDBPDatabase>};
+  db: PromiseProperty<IDBPDatabase<DB>>;
+
+  ws: PromiseProperty<WebSocket>;
 
   constructor(props: EventPageProps) {
     super(props);
@@ -51,46 +54,25 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
       numbers: new Map(props.event.items.map(item => [item.id, 0]))
     };
 
-    this.db = new class {
-
-      promise: Promise<IDBPDatabase>;
-      resolve?: (value: Promise<IDBPDatabase>) => void;
-
-      constructor() {
-        this.promise = new Promise<IDBPDatabase>(resolve => {
-          this.resolve = resolve;
-        });
-      }
-
-      then<T, U>(
-        onFulfilled?: ((value: IDBPDatabase) => T | PromiseLike<T>) | undefined | null,
-        onRejected?: ((reason: any) => U | PromiseLike<U>) | undefined | null
-      ): Promise<T | U> {
-        return this.promise.then(onFulfilled, onRejected);
-      }
-
-      open(...args: Parameters<(typeof openDB)>): this {
-        this.resolve!(openDB(...args));
-        return this;
-      }
-    };
+    this.db = new PromiseProperty<IDBPDatabase<DB>>();
+    this.ws = new PromiseProperty<WebSocket>();
   }
 
   componentDidMount() {
-    this.db.open("kiradopay", 1, {
+    this.db.resolve(openDB("kiradopay", 1, {
       upgrade(db, oldVersion, _newVersion, _transaction) {
         if (oldVersion < 1) {
           db.createObjectStore("sales_records", { keyPath: "code" });
         }
       }
-    });
+    }));
 
     const url = new URL(location.href);
     url.pathname = "/ws";
     url.protocol = url.protocol.replace("http", "ws");
     const ws = new WebSocket(url);
     ws.onopen = () => {
-      ws.send("message");
+      this.ws.resolve(ws);
     };
     ws.onmessage = ({ data }) => {
       if (typeof data !== "string") {
@@ -98,6 +80,9 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
       }
       console.log(data);
     }
+    (async () => {
+      (await this.ws).send("message");
+    })();
   }
 
   render() {
@@ -173,7 +158,8 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
     };
 
     (async () => {
-      ((await this.db) as IDBPDatabase<DB>).add("sales_records", salesRecord);
+      console.log("registered");
+      (await this.db).add("sales_records", salesRecord);
     })();
 
     this.setState({
