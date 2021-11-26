@@ -84,6 +84,20 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
         }
       }
     });
+
+    const url = new URL(location.href);
+    url.pathname = "/ws";
+    url.protocol = url.protocol.replace("http", "ws");
+    const ws = new WebSocket(url);
+    ws.onopen = () => {
+      ws.send("message");
+    };
+    ws.onmessage = ({ data }) => {
+      if (typeof data !== "string") {
+        throw new TypeError;
+      }
+      console.log(data);
+    }
   }
 
   render() {
