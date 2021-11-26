@@ -2,9 +2,17 @@ import React from "react";
 import { GetServerSideProps } from "next";
 import { PrismaClient } from "@prisma/client";
 import type { Event, Item, SalesRecord } from "@prisma/client";
-import { AppBar, Box, Card, CardContent, CardMedia, Container, Grid, IconButton, Toolbar, Typography } from "@mui/material";
+import { AppBar, Box, Card, CardContent, CardMedia, CircularProgress, Container, Grid, IconButton, LinearProgress, Paper, Toolbar, Typography } from "@mui/material";
 import Button, { ButtonProps } from "@mui/material/Button"
-import { Menu as MenuIcon } from "@mui/icons-material";
+import {
+  Cancel as CancelIcon,
+  CloudDone as CloudDoneIcon,
+  CloudOff as CloudOffIcon,
+  CloudQueue as CloudQueueIcon,
+  CloudUpload as CloudUploadIcon,
+  HourglassBottom as HourglassBottomIcon,
+  Menu as MenuIcon,
+} from "@mui/icons-material";
 import { openDB } from "idb";
 import type { DBSchema, IDBPDatabase } from "idb";
 import { PromiseProperty } from "../../PromisePropery";
@@ -15,7 +23,13 @@ type EventPageProps = {
 
 type EventPageState = {
   numbers: Map<number, number>,
+  dbState: DBState,
+  wsState: WsState,
 }
+
+type DBState = "uninitialized" | "opening" | "open" | "registering" | "error";
+
+type WsState = "uninitialized" | "connecting" | "loading" | "online" | "syncing" | "offline";
 
 export const getServerSideProps: GetServerSideProps<EventPageProps> = async ({ params }) => {
   const prisma = new PrismaClient();
@@ -51,7 +65,9 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
     super(props);
 
     this.state = {
-      numbers: new Map(props.event.items.map(item => [item.id, 0]))
+      numbers: new Map(props.event.items.map(item => [item.id, 0])),
+      dbState: "uninitialized",
+      wsState: "uninitialized",
     };
 
     this.db = new PromiseProperty<IDBPDatabase<DB>>();
@@ -98,7 +114,7 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
             </IconButton>
           </Toolbar>
         </AppBar>
-        <Container sx={{ flex: "auto", overflowY: "scroll" , py: 1 }}>
+        <Container sx={{ flex: "auto", overflowY: "auto" , py: 2 }}>
           <Grid container spacing={1} alignItems="stretch">
             {
               this.props.event.items.map(item => (
@@ -113,14 +129,38 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
             }
           </Grid>
         </Container>
-        <Container sx={{ py: 1 }}>
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <Typography fontSize="2em" fontWeight="bold" sx={{ flex: "auto" }}>
-              &yen; { this.totalAmount().toLocaleString("ja-JP") }
-            </Typography>
-            <Button variant="contained" onClick={ this.registered }>登録</Button>
-          </Box>
-        </Container>
+        {
+          this.statusValue() === "dbInitializing"
+          ? <LinearProgress />
+          : null
+        }
+        <Paper variant="outlined" square sx={{ py: 1 }}>
+          <Container>
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <Status value={ this.statusValue() } />
+              <Typography sx={{
+                flex: "auto",
+                fontSize: "2em",
+                fontWeight: "bold",
+                textAlign: "right",
+                px: 2
+              }}>
+                &yen; { this.totalAmount().toLocaleString("ja-JP") }
+              </Typography>
+              <LargeButton
+                variant="contained"
+                disabled={
+                  ["dbInitializing", "registering", "error"].includes(this.statusValue())
+                  || Array.from(this.state.numbers).map(([_, number]) => number).every(x => x === 0)
+                }
+                onClick={ this.registered }
+                sx={{ px: 4 }}
+              >
+                登録
+              </LargeButton>
+            </Box>
+          </Container>
+        </Paper>
       </Box>
     );
   }
@@ -131,6 +171,31 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
       .map(item => item.unitPrice * this.state.numbers.get(item.id)!)
       .reduce((a, b) => a + b)
     );
+  }
+
+  statusValue(): StatusType {
+    switch (this.state.dbState) {
+      case "uninitialized":
+      case "opening":
+        return "dbInitializing";
+      case "registering":
+        return "registering";
+      case "open":
+        switch(this.state.wsState) {
+          case "uninitialized":
+          case "connecting":
+          case "loading":
+            return "wsInitializing";
+          case "online":
+            return "synced";
+          case "syncing":
+            return "syncing";
+          case "offline":
+            return "offline";
+        }
+      case "error":
+        return "error";
+    }
   }
 
   numberChanged = (id: number, newValue: number) => {
@@ -224,13 +289,38 @@ const ItemNumberInput = ({ value, onValueChange }: ItemNumberInputProps) => (
 
 const ItemNumberInputButtonNumber = ({ selected, ...props }: ButtonProps & { selected: boolean }) => (
   <ItemNumberInputButton variant={ selected ? "contained" : "outlined" } { ...props }/>
-)
+);
 
 const ItemNumberInputButton = (props: ButtonProps) => (
+  <LargeButton { ...props } sx={{ minWidth: 0, px: 0.5, ...props.sx }}/>
+);
+
+type StatusType = "dbInitializing" | "wsInitializing" | "synced" | "registering" | "syncing" | "offline" | "error";
+
+const Status: React.FC<{ value: StatusType }> = ({ value }) => {
+  switch(value) {
+    case "dbInitializing":
+      return <HourglassBottomIcon />;
+    case "wsInitializing":
+      return <CloudQueueIcon />;
+    case "synced":
+      return <CloudDoneIcon />;
+    case "registering":
+      return <CircularProgress />;
+    case "syncing":
+      return <CloudUploadIcon />;
+    case "offline":
+      return <CloudOffIcon />;
+    case "error":
+      return <CancelIcon />;
+  }
+};
+
+const LargeButton = (props: ButtonProps) => (
   <Button
     variant="outlined"
     {...props}
-    sx={{ minWidth: 0, fontSize: "1.5em", lineHeight: "normal", px: 0.5, py: 1, ...props.sx }}
+    sx={{ fontSize: "1.5em", lineHeight: "normal", py: 1, ...props.sx }}
   />
 );
 
