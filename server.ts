@@ -1,19 +1,27 @@
 import express from "express";
-import expressWs from "express-ws";
+import { WebSocketServer } from "ws";
 import next from "next";
+import type { Socket } from "net";
 
-const s = express();
-const wss = expressWs(s).getWss();
-const server = s as express.Application as expressWs.Application;
+const expressServer = express();
+const wsServer = new WebSocketServer({ noServer: true });
+wsServer.on("connection", ws => {
+  ws.send("message");
+  ws.on("message", (data, isBinary) => {
+    console.log(data.toString());
+    ws.send(data.toString());
+  });
+});
 const app = next({ dev: process.env.NODE_ENV !== "production" });
 const handle = app.getRequestHandler();
 app.prepare().then(() => {
-  server.ws("/ws", ws => {
-    ws.on("message", data => {
-      console.log(data);
-      ws.send("message");
-    });
+  expressServer.all("*", (req, res) => handle(req, res));
+  const httpServer = expressServer.listen(process.env.PORT || 3000);
+  httpServer.on("upgrade", (req, socket, head) => {
+    if (req.url === "/ws") {
+      wsServer.handleUpgrade(req, socket as Socket, head, ws => {
+        wsServer.emit("connection", ws, req);
+      });
+    }
   });
-  server.all("*", (req, res) => handle(req, res));
-  server.listen(process.env.PORT || 3000);
 });
