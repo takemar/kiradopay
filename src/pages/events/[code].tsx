@@ -13,9 +13,7 @@ import {
   HourglassBottom as HourglassBottomIcon,
   Menu as MenuIcon,
 } from "@mui/icons-material";
-import { openDB } from "idb";
-import type { DBSchema, IDBPDatabase } from "idb";
-import { PromiseProperty } from "../../PromisePropery";
+import EventApplication, { DBState, WsState } from "../../EventApplication";
 
 type EventPageProps = {
   event: Event & { items: Item[] }
@@ -23,13 +21,10 @@ type EventPageProps = {
 
 type EventPageState = {
   numbers: Map<number, number>,
-  dbState: DBState,
-  wsState: WsState,
+  status: StatusType,
 }
 
-type DBState = "uninitialized" | "opening" | "open" | "registering" | "error";
-
-type WsState = "uninitialized" | "connecting" | "loading" | "online" | "syncing" | "offline";
+type StatusType = "dbInitializing" | "wsInitializing" | "synced" | "registering" | "syncing" | "offline" | "error";
 
 export const getServerSideProps: GetServerSideProps<EventPageProps> = async ({ params }) => {
   const prisma = new PrismaClient();
@@ -48,57 +43,56 @@ export const getServerSideProps: GetServerSideProps<EventPageProps> = async ({ p
   }
 };
 
-interface DB extends DBSchema {
-  sales_records: {
-    key: string,
-    value: Omit<SalesRecord, "clientId"> & { items: { itemId: number, number: number }[] },
-  }
-}
-
 export default class EventPage extends React.Component<EventPageProps, EventPageState> {
 
-  db: PromiseProperty<IDBPDatabase<DB>>;
+  application: EventApplication;
 
-  ws: PromiseProperty<WebSocket>;
+  static status(dbState: DBState, wsState: WsState): StatusType {
+    switch (dbState) {
+      case "uninitialized":
+      case "opening":
+        return "dbInitializing";
+      case "registering":
+        return "registering";
+      case "open":
+        switch(wsState) {
+          case "uninitialized":
+          case "connecting":
+          case "loading":
+            return "wsInitializing";
+          case "online":
+            return "synced";
+          case "syncing":
+            return "syncing";
+          case "offline":
+            return "offline";
+        }
+      case "error":
+        return "error";
+    }
+  }
 
   constructor(props: EventPageProps) {
     super(props);
 
     this.state = {
       numbers: new Map(props.event.items.map(item => [item.id, 0])),
-      dbState: "uninitialized",
-      wsState: "uninitialized",
+      status: "dbInitializing",
     };
 
-    this.db = new PromiseProperty<IDBPDatabase<DB>>();
-    this.ws = new PromiseProperty<WebSocket>();
+    this.application = new EventApplication(this.props.event.id);
+    this.application.addEventListener("statechange", () => {
+      this.setState({
+        status: EventPage.status(
+          this.application.dbState,
+          this.application.wsState,
+        )
+      })
+    })
   }
 
   componentDidMount() {
-    this.db.resolve(openDB("kiradopay", 1, {
-      upgrade(db, oldVersion, _newVersion, _transaction) {
-        if (oldVersion < 1) {
-          db.createObjectStore("sales_records", { keyPath: "code" });
-        }
-      }
-    }));
-
-    const url = new URL(location.href);
-    url.pathname = "/ws";
-    url.protocol = url.protocol.replace("http", "ws");
-    const ws = new WebSocket(url);
-    ws.onopen = () => {
-      this.ws.resolve(ws);
-    };
-    ws.onmessage = ({ data }) => {
-      if (typeof data !== "string") {
-        throw new TypeError;
-      }
-      console.log(data);
-    }
-    (async () => {
-      (await this.ws).send("message");
-    })();
+    this.application.initialize();
   }
 
   render() {
@@ -130,14 +124,14 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
           </Grid>
         </Container>
         {
-          this.statusValue() === "dbInitializing"
+          this.state.status === "dbInitializing"
           ? <LinearProgress />
           : null
         }
         <Paper variant="outlined" square sx={{ py: 1 }}>
           <Container>
             <Box sx={{ display: "flex", alignItems: "center" }}>
-              <Status value={ this.statusValue() } />
+              <Status value={ this.state.status } />
               <Typography sx={{
                 flex: "auto",
                 fontSize: "2em",
@@ -150,10 +144,10 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
               <LargeButton
                 variant="contained"
                 disabled={
-                  ["dbInitializing", "registering", "error"].includes(this.statusValue())
+                  ["dbInitializing", "registering", "error"].includes(this.state.status)
                   || Array.from(this.state.numbers).map(([_, number]) => number).every(x => x === 0)
                 }
-                onClick={ this.registered }
+                onClick={ this.registerButtonClicked }
                 sx={{ px: 4 }}
               >
                 登録
@@ -173,64 +167,24 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
     );
   }
 
-  statusValue(): StatusType {
-    switch (this.state.dbState) {
-      case "uninitialized":
-      case "opening":
-        return "dbInitializing";
-      case "registering":
-        return "registering";
-      case "open":
-        switch(this.state.wsState) {
-          case "uninitialized":
-          case "connecting":
-          case "loading":
-            return "wsInitializing";
-          case "online":
-            return "synced";
-          case "syncing":
-            return "syncing";
-          case "offline":
-            return "offline";
-        }
-      case "error":
-        return "error";
-    }
-  }
-
   numberChanged = (id: number, newValue: number) => {
     this.setState(currentState => ({
       numbers: new Map(currentState.numbers).set(id, newValue)
     }));
   }
 
-  registered = () => {
+  registerButtonClicked = () => {
     const items = (
       Array.from(this.state.numbers)
       .map(([itemId, number]) => ({ itemId, number }))
       .filter(({ number }) => number !== 0)
     );
-
-    if (items.length === 0) {
-      return;
-    }
-
-    const salesRecord = {
-      code: randomUUID(),
-      timestamp: new Date(),
-      eventId: this.props.event.id,
-      items
-    };
-
-    (async () => {
-      console.log("registered");
-      (await this.db).add("sales_records", salesRecord);
-    })();
-
-    this.setState({
-      numbers: new Map(this.props.event.items.map(item => [item.id, 0]))
+    this.application.register(items).then(() => {
+      this.setState({
+        numbers: new Map(this.props.event.items.map(item => [item.id, 0]))
+      });
     });
-  }
+  };
 };
 
 type ItemProps = {
@@ -294,8 +248,6 @@ const ItemNumberInputButtonNumber = ({ selected, ...props }: ButtonProps & { sel
 const ItemNumberInputButton = (props: ButtonProps) => (
   <LargeButton { ...props } sx={{ minWidth: 0, px: 0.5, ...props.sx }}/>
 );
-
-type StatusType = "dbInitializing" | "wsInitializing" | "synced" | "registering" | "syncing" | "offline" | "error";
 
 const Status: React.FC<{ value: StatusType }> = ({ value }) => {
   switch(value) {
