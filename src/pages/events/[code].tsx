@@ -24,7 +24,7 @@ type EventPageState = {
   status: StatusType,
 }
 
-type StatusType = "dbInitializing" | "wsInitializing" | "synced" | "registering" | "syncing" | "offline" | "error";
+type StatusType = "dbInitializing" | "dbBlocked" | "wsInitializing" | "synced" | "registering" | "syncing" | "offline" | "error";
 
 export const getServerSideProps: GetServerSideProps<EventPageProps> = async ({ params }) => {
   const prisma = new PrismaClient();
@@ -52,13 +52,15 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
       case "uninitialized":
       case "opening":
         return "dbInitializing";
+      case "blocked":
+        return "dbBlocked"
       case "registering":
         return "registering";
       case "open":
         switch(wsState) {
           case "uninitialized":
           case "connecting":
-          case "loading":
+          case "establishing":
             return "wsInitializing";
           case "online":
             return "synced";
@@ -88,7 +90,10 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
           this.application.wsState,
         )
       })
-    })
+    });
+    this.application.addEventListener("dberror", () => {
+      // TODO
+    });
   }
 
   componentDidMount() {
@@ -124,7 +129,7 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
           </Grid>
         </Container>
         {
-          this.state.status === "dbInitializing"
+          this.state.status === "dbInitializing" || this.state.status === "dbBlocked"
           ? <LinearProgress />
           : null
         }
@@ -144,7 +149,7 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
               <LargeButton
                 variant="contained"
                 disabled={
-                  ["dbInitializing", "registering", "error"].includes(this.state.status)
+                  ["dbInitializing", "dbBlocked", "registering", "error"].includes(this.state.status)
                   || Array.from(this.state.numbers).map(([_, number]) => number).every(x => x === 0)
                 }
                 onClick={ this.registerButtonClicked }
@@ -183,6 +188,8 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
       this.setState({
         numbers: new Map(this.props.event.items.map(item => [item.id, 0]))
       });
+    }).catch(() => {
+      // TODO
     });
   };
 };
@@ -252,6 +259,7 @@ const ItemNumberInputButton = (props: ButtonProps) => (
 const Status: React.FC<{ value: StatusType }> = ({ value }) => {
   switch(value) {
     case "dbInitializing":
+    case "dbBlocked":
       return <HourglassBottomIcon />;
     case "wsInitializing":
       return <CloudQueueIcon />;

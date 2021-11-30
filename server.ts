@@ -3,16 +3,21 @@ import { WebSocketServer } from "ws";
 import next from "next";
 import type { Socket } from "net";
 
+const dev = process.env.NODE_ENV !== "production"
+
 const expressServer = express();
 const wsServer = new WebSocketServer({ noServer: true });
 wsServer.on("connection", ws => {
-  ws.send("message");
   ws.on("message", (data, isBinary) => {
-    console.log(data.toString());
-    ws.send(data.toString());
+    if (isBinary) {
+      throw new TypeError;
+    }
+    if (dev) {
+      console.log(data.toString());
+    }
   });
 });
-const app = next({ dev: process.env.NODE_ENV !== "production" });
+const app = next({ dev });
 const handle = app.getRequestHandler();
 app.prepare().then(() => {
   expressServer.all("*", (req, res) => handle(req, res));
