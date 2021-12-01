@@ -2,22 +2,25 @@ import type { Item, SalesRecord } from "@prisma/client";
 import { openDB } from "idb";
 import type { DBSchema, IDBPDatabase } from "idb";
 import { PromiseProperty } from "./PromisePropery";
+import WebSocketMessage from "./WebSocketMessage";
 
 // DOM Event Object
 const EventObject = Event;
 
 export type DBState = "uninitialized" | "opening" | "blocked" | "open" | "registering" | "error";
 
-export type WsState = "uninitialized" | "connecting" | "establishing" | "online" | "syncing" | "offline";
+export type WsState = "uninitialized" | "connecting" | "hello" | "online" | "syncing" | "offline";
 
 interface DB extends DBSchema {
+  info: {
+    key: string,
+    value: any,
+  },
   sales_records: {
     key: string,
     value: Omit<SalesRecord, "clientId"> & { items: { itemId: number, number: number }[] },
-  }
+  },
 }
-
-type WsEstablishedMessage = {};
 
 export default class EventApplication extends EventTarget {
 
@@ -67,10 +70,13 @@ export default class EventApplication extends EventTarget {
   private openDB() {
     const self = this;
 
-    this.db.resolve(openDB("kiradopay", 1, {
+    this.db.resolve(openDB("kiradopay", 2, {
       upgrade(db, oldVersion, _newVersion, _transaction) {
         if (oldVersion < 1) {
           db.createObjectStore("sales_records", { keyPath: "code" });
+        }
+        if (oldVersion < 2) {
+          db.createObjectStore("info");
         }
       },
       blocked() {
@@ -127,15 +133,22 @@ export default class EventApplication extends EventTarget {
     if (typeof e.data !== "string") {
       throw new TypeError;
     }
-    const data = JSON.parse(e.data);
-    switch (data.type) {
-      case "established":
-        this.wsEstablished(data, e.target as WebSocket);
-      case "synced":
-        this.wsSynced();
+    const message = JSON.parse(e.data) as WebSocketMessage.Downward;
+    switch (message.type) {
+      case "server-hello":
+        this.wsHelloReceived(message.data, e.target as WebSocket);
+        break;
+      case "stored":
+        this.wsSynced(message.data);
+        break;
       case "ping":
         this.wsPingReceived();
+        break;
     }
+  }
+
+  private async wsSend(message: WebSocketMessage.Upward) {
+    (await this.ws).send(JSON.stringify(message));
   }
 
   private async openWs() {
@@ -147,8 +160,8 @@ export default class EventApplication extends EventTarget {
 
     ws.onopen = () => {
       this.wsTimeoutDelay = this.WS_TIMEOUT_DELAY_INITIAL;
-      this.wsState = "establishing";
-      this.wsEstablish(ws);
+      this.wsState = "hello";
+      this.wsSendHello(ws);
     };
     ws.onmessage = this.wsMessageReceived;
     ws.onclose = this.wsClosed;
@@ -159,15 +172,25 @@ export default class EventApplication extends EventTarget {
   }
 
   // this.wsはestablishした後でresolveするので、WebSocketオブジェクトは引数で受け取る。
-  private wsEstablish(ws: WebSocket) {
-    // TODO
-    const establishingMessage = {};
-    ws.send(JSON.stringify(establishingMessage));
+  private async wsSendHello(ws: WebSocket) {
+    const clientId = await (await this.db).get("info", "clientId") as number | undefined;
+    const helloMessage: WebSocketMessage.ClientHello = {};
+    if (clientId) {
+      helloMessage.clientId = clientId;
+    }
+    ws.send(JSON.stringify({ type: "client-hello", data: helloMessage }));
   }
 
   // this.wsはこのメソッドの中でresolveするので、WebSocketオブジェクトは引数で受け取る。
-  private wsEstablished(data: WsEstablishedMessage, ws: WebSocket) {
-    // TODO
+  private async wsHelloReceived(data: WebSocketMessage.ServerHello, ws: WebSocket) {
+    if (data.clientInfo) {
+      const tx = (await this.db).transaction("info", "readwrite");
+      await Promise.all([
+        tx.store.add(data.clientInfo.id, "clientId"),
+        tx.store.add(data.clientInfo.name, "clientName"),
+        tx.done,
+      ]);
+    }
     this.wsState = "online";
     this.ws.resolve(ws);
     this.sync();
@@ -203,12 +226,14 @@ export default class EventApplication extends EventTarget {
   }
 
   private async sync() {
-    // TODO
+    const salesRecords = await (await this.db).getAll("sales_records");
     this.wsState = "syncing";
+    this.wsSend({ type: "store", data: salesRecords });
   }
 
-  private wsSynced() {
-    // TODO
+  private async wsSynced(data: WebSocketMessage.Stored) {
+    const tx = (await this.db).transaction("sales_records", "readwrite");
+    await Promise.all([...data.map(code => tx.store.delete(code)), tx.done]);
     this.wsState = "online";
   }
 

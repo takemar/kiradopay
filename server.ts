@@ -3,7 +3,7 @@ import { WebSocketServer } from "ws";
 import next from "next";
 import type { Socket } from "net";
 
-const dev = process.env.NODE_ENV !== "production"
+const dev = process.env.NODE_ENV !== "production";
 
 const expressServer = express();
 const wsServer = new WebSocketServer({ noServer: true });
@@ -14,6 +14,9 @@ wsServer.on("connection", ws => {
     }
     if (dev) {
       console.log(data.toString());
+    }
+    if (JSON.parse(data.toString()).type === "client-hello") {
+      ws.send(JSON.stringify({ type: "server-hello", data: {} }));
     }
   });
 });

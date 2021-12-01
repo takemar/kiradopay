@@ -60,7 +60,7 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
         switch(wsState) {
           case "uninitialized":
           case "connecting":
-          case "establishing":
+          case "hello":
             return "wsInitializing";
           case "online":
             return "synced";
