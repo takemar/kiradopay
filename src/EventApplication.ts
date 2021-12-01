@@ -4,8 +4,20 @@ import type { DBSchema, IDBPDatabase } from "idb";
 import { PromiseProperty } from "./PromisePropery";
 import WebSocketMessage from "./WebSocketMessage";
 
+type ApplicationEventType = "statechange" | "dbopeningfailure" | "dberror";
+
+type TypedEvent<T extends string> = Event & { type: T };
+
 // DOM Event Object
-const EventObject = Event;
+const EventObject = Event as (
+  Omit<typeof Event, "new">
+  & {
+    new<T extends string>(
+      type: T,
+      ...rest: ConstructorParameters<(typeof Event)> extends [any, ...infer U] ? U : []
+    ): TypedEvent<T>;
+  }
+);
 
 export type DBState = "uninitialized" | "opening" | "blocked" | "open" | "registering" | "error";
 
@@ -22,7 +34,24 @@ interface DB extends DBSchema {
   },
 }
 
-export default class EventApplication extends EventTarget {
+interface EventApplication extends EventTarget {
+
+  addEventListener(
+    type: ApplicationEventType,
+    ...rest: Parameters<EventTarget["addEventListener"]> extends [any, ...infer U] ? U : []
+  ): ReturnType<EventTarget["addEventListener"]>;
+
+  removeEventListener(
+    type: ApplicationEventType,
+    ...rest: Parameters<EventTarget["removeEventListener"]> extends [any, ...infer U] ? U : []
+  ): ReturnType<EventTarget["removeEventListener"]>;
+
+  dispatchEvent(
+    event: TypedEvent<ApplicationEventType>,
+    ...rest: Parameters<EventTarget["dispatchEvent"]> extends [any, ...infer U] ? U : []
+  ): ReturnType<EventTarget["dispatchEvent"]>;
+}
+class EventApplication extends EventTarget {
 
   private eventId: number;
   private db: PromiseProperty<IDBPDatabase<DB>>;
@@ -258,3 +287,5 @@ function randomUUID() {
   }
   return crypto.randomUUID!();
 }
+
+export default EventApplication;
