@@ -1,7 +1,7 @@
-import type { Item, SalesRecord } from "@prisma/client";
+import type { SalesRecord } from "@prisma/client";
 import { openDB } from "idb";
 import type { DBSchema, IDBPDatabase } from "idb";
-import { PromiseProperty } from "./PromisePropery";
+import PromiseProperty from "./PromiseProperty";
 import WebSocketMessage from "./WebSocketMessage";
 
 type ApplicationEventType = "statechange" | "dbopeningfailure" | "dberror";
@@ -51,6 +51,7 @@ interface EventApplication extends EventTarget {
     ...rest: Parameters<EventTarget["dispatchEvent"]> extends [any, ...infer U] ? U : []
   ): ReturnType<EventTarget["dispatchEvent"]>;
 }
+
 class EventApplication extends EventTarget {
 
   private eventId: number;

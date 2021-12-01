@@ -1,7 +1,7 @@
 import React from "react";
 import { GetServerSideProps } from "next";
 import { PrismaClient } from "@prisma/client";
-import type { Event, Item, SalesRecord } from "@prisma/client";
+import type { Event, Item } from "@prisma/client";
 import { AppBar, Box, Card, CardContent, CardMedia, CircularProgress, Container, Grid, IconButton, LinearProgress, Paper, Toolbar, Typography } from "@mui/material";
 import Button, { ButtonProps } from "@mui/material/Button"
 import {
@@ -283,16 +283,3 @@ const LargeButton = (props: ButtonProps) => (
     sx={{ fontSize: "1.5em", lineHeight: "normal", py: 1, ...props.sx }}
   />
 );
-
-function randomUUID() {
-  if (!("randomUUID" in crypto)) {
-    crypto.randomUUID = function randomUUID() {
-      const randomValues = crypto.getRandomValues(new Uint16Array(8));
-      randomValues[3] = (randomValues[3] & 0x0fff) | 0x4000;
-      randomValues[4] = (randomValues[4] & 0x3fff) | 0x8000;
-      const hex = Array.from(randomValues).map(x => x.toString(16))
-      return `${ hex[0] }${ hex[1] }-${ hex[2] }-${ hex[3] }-${ hex[4] }-${ hex[5] }${ hex[6] }${ hex[7] }`;
-    }
-  }
-  return crypto.randomUUID!();
-}

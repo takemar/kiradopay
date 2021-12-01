@@ -1,4 +1,4 @@
-export class PromiseProperty<V> implements PromiseLike<V> {
+export default class PromiseProperty<V> implements PromiseLike<V> {
 
   promise: Promise<V>;
   resolutionFunc?: (value: V | PromiseLike<V>) => void;
