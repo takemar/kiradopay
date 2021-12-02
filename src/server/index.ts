@@ -1,14 +1,12 @@
 import express from "express";
-import { WebSocketServer } from "ws";
 import next from "next";
 import type { Socket } from "net";
-import listenWss from "./websocket";
+import webSocketServer from "./websocket";
 
 const dev = process.env.NODE_ENV !== "production";
 
 const expressServer = express();
-const wsServer = new WebSocketServer({ noServer: true });
-listenWss(wsServer, dev);
+const wsServer = webSocketServer({ noServer: true, dev });
 const app = next({ dev });
 const handle = app.getRequestHandler();
 app.prepare().then(() => {

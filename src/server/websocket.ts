@@ -1,7 +1,14 @@
 import { WebSocketServer } from "ws";
 
-export default function listenWss(wsServer: WebSocketServer, dev: boolean) {
-  wsServer.on("connection", ws => {
+type X = ConstructorParameters<typeof WebSocketServer> extends [any, ...infer T] ? T : []
+
+type WebSocketServerConstructorParameters = ConstructorParameters<typeof WebSocketServer>;
+
+export default function webSocketServer(
+  { dev = false, ...options }: ConstructorParameters<typeof WebSocketServer>[0] & { dev?: boolean },
+  ...rest: WebSocketServerConstructorParameters extends [any?, ...infer T] ? T : []
+) {
+  return new WebSocketServer(options).on("connection", ws => {
     ws.on("message", (data, isBinary) => {
       if (isBinary) {
         throw new TypeError;
