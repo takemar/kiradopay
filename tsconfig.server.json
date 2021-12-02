@@ -5,6 +5,6 @@
     "noEmit": false,
     "outDir": ".server"
   },
-  "files": ["server.ts"],
+  "files": ["src/server/index.ts"],
   "include": []
 }

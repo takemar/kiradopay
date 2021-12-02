@@ -2,11 +2,11 @@
   "name": "kiradopay",
   "private": true,
   "scripts": {
-    "dev": "ts-node --project tsconfig.server.json server.ts",
+    "dev": "ts-node --project tsconfig.server.json src/server/index.ts",
     "build": "run-p build:next build:server",
     "build:next": "next build",
     "build:server": "tsc --project tsconfig.server.json",
-    "start": "NODE_ENV=production node .server/server.js",
+    "start": "NODE_ENV=production node .server/index.js",
     "lint": "next lint"
   },
   "dependencies": {

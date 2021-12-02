@@ -2,24 +2,13 @@ import express from "express";
 import { WebSocketServer } from "ws";
 import next from "next";
 import type { Socket } from "net";
+import listenWss from "./websocket";
 
 const dev = process.env.NODE_ENV !== "production";
 
 const expressServer = express();
 const wsServer = new WebSocketServer({ noServer: true });
-wsServer.on("connection", ws => {
-  ws.on("message", (data, isBinary) => {
-    if (isBinary) {
-      throw new TypeError;
-    }
-    if (dev) {
-      console.log(data.toString());
-    }
-    if (JSON.parse(data.toString()).type === "client-hello") {
-      ws.send(JSON.stringify({ type: "server-hello", data: {} }));
-    }
-  });
-});
+listenWss(wsServer, dev);
 const app = next({ dev });
 const handle = app.getRequestHandler();
 app.prepare().then(() => {
