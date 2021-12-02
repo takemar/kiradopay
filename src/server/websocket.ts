@@ -1,7 +1,5 @@
 import { WebSocketServer } from "ws";
 
-type X = ConstructorParameters<typeof WebSocketServer> extends [any, ...infer T] ? T : []
-
 type WebSocketServerConstructorParameters = ConstructorParameters<typeof WebSocketServer>;
 
 export default function webSocketServer(
