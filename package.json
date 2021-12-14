@@ -6,7 +6,7 @@
     "build": "run-p build:next build:server",
     "build:next": "next build",
     "build:server": "tsc --project tsconfig.server.json",
-    "start": "NODE_ENV=production node .server/index.js",
+    "start": "NODE_ENV=production node .server/server/index.js",
     "lint": "next lint"
   },
   "dependencies": {
