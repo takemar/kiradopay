@@ -3,6 +3,7 @@
 /.server/
 /db/db.sqlite3
 /db/db.sqlite3-journal
+/src/names.json
 
 # dependencies
 /node_modules

@@ -204,7 +204,7 @@ class EventApplication extends EventTarget {
   // this.wsはestablishした後でresolveするので、WebSocketオブジェクトは引数で受け取る。
   private async wsSendHello(ws: WebSocket) {
     const clientId = await (await this.db).get("info", "clientId") as number | undefined;
-    const helloMessage: WebSocketMessage.ClientHello = {};
+    const helloMessage: WebSocketMessage.ClientHello = { eventId: this.eventId };
     if (clientId) {
       helloMessage.clientId = clientId;
     }

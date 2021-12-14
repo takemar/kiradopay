@@ -2,7 +2,8 @@ import { Client as ClientModel, SalesRecord } from "@prisma/client";
 
 namespace WebSocketMessage {
   export type ClientHello = {
-    clientId?: number
+    clientId?: number,
+    eventId: number,
   };
   export type ServerHello = {
     clientInfo?: ClientModel
