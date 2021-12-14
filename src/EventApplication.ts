@@ -257,8 +257,10 @@ class EventApplication extends EventTarget {
 
   private async sync() {
     const salesRecords = await (await this.db).getAll("sales_records");
-    this.wsState = "syncing";
-    this.wsSend({ type: "store", data: salesRecords });
+    if (salesRecords.length !== 0) {
+      this.wsState = "syncing";
+      this.wsSend({ type: "store", data: salesRecords });
+    }
   }
 
   private async wsSynced(data: WebSocketMessage.Stored) {
