@@ -9,7 +9,8 @@ export default function webSocketServer(
   { dev = false, ...options }: ConstructorParameters<typeof WebSocketServer>[0] & { dev?: boolean },
   ...rest: ConstructorParameters<typeof WebSocketServer> extends [any?, ...infer T] ? T : []
 ) {
-  return new WebSocketServer(options).on("connection", ws => {
+  const wss =  new WebSocketServer(options);
+  wss.on("connection", ws => {
     ws.on("message", async (rawData, isBinary) => {
       if (isBinary) {
         throw new TypeError;
@@ -19,34 +20,48 @@ export default function webSocketServer(
       }
       const message = JSON.parse(rawData.toString()) as WebSocketMessage.Upward;
 
-      if (message.type === "client-hello") {
-        let response: WebSocketMessage.Downward;
-        if (message.data.clientId) {
-          await prisma.event.update({
-            where: {
-              id: message.data.eventId
-            },
-            data: {
-              openningClients: {
-                connect: [{ id: message.data.clientId }]
-              }
-            }
-          });
-          response = { type: "server-hello", data: {}};
-        } else {
-          const client = await prisma.client.create({
-            data: {
-              name: names[Math.floor(Math.random() * names.length)],
-              openningEvents: {
-                connect: [{ id: message.data.eventId }],
-              }
-            },
-          });
-          response = { type: "server-hello", data: { clientInfo: client }};
-        }
-
-        ws.send(JSON.stringify(response));
+      let response: WebSocketMessage.Downward;
+      switch (message.type) {
+        case "client-hello":
+          response = {
+            type: "server-hello",
+            data: await handleClientHello(message.data),
+          };
+          break;
+        case "store":
+          throw new Error;
+        case "bye":
+          // TODO
+          return;
       }
+      ws.send(JSON.stringify(response));
     });
   });
+  return wss;
+}
+
+async function handleClientHello(data: WebSocketMessage.ClientHello) {
+  if (data.clientId) {
+    await prisma.event.update({
+      where: {
+        id: data.eventId
+      },
+      data: {
+        openningClients: {
+          connect: [{ id: data.clientId }]
+        }
+      }
+    });
+    return { type: "server-hello", data: {}};
+  } else {
+    const client = await prisma.client.create({
+      data: {
+        name: names[Math.floor(Math.random() * names.length)],
+        openningEvents: {
+          connect: [{ id: data.eventId }],
+        }
+      },
+    });
+    return { clientInfo: client };
+  }
 }
