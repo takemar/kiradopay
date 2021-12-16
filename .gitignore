@@ -3,6 +3,8 @@
 /.server/
 /db/db.sqlite3
 /db/db.sqlite3-journal
+/public/sw.js
+/public/workbox-*.js
 /src/names.json
 
 # dependencies
