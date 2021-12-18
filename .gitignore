@@ -4,7 +4,9 @@
 /db/db.sqlite3
 /db/db.sqlite3-journal
 /public/sw.js
+/public/sw.js.map
 /public/workbox-*.js
+/public/workbox-*.js.map
 /src/names.json
 
 # dependencies
