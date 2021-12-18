@@ -1,26 +1,27 @@
 import React from "react";
 import { GetServerSideProps } from "next";
 import { PrismaClient } from "@prisma/client";
-import type { Event, Item } from "@prisma/client";
+import type { Client, Event as EventObject, Item } from "@prisma/client";
 import { AppBar, Box, Card, CardContent, CardMedia, CircularProgress, Container, Grid, IconButton, LinearProgress, Paper, Toolbar, Typography } from "@mui/material";
 import Button, { ButtonProps } from "@mui/material/Button"
 import {
+  AccountCircle as AccountCircleIcon,
   Cancel as CancelIcon,
   CloudDone as CloudDoneIcon,
   CloudOff as CloudOffIcon,
   CloudQueue as CloudQueueIcon,
   CloudUpload as CloudUploadIcon,
   HourglassBottom as HourglassBottomIcon,
-  Menu as MenuIcon,
 } from "@mui/icons-material";
 import EventApplication, { DBState, WsState } from "../../../EventApplication";
 
 type EventPageProps = {
-  event: Event & { items: Item[] }
+  event: EventObject & { items: Item[] }
 };
 
 type EventPageState = {
   numbers: Map<number, number>,
+  clientName: string | null,
   status: StatusType,
 }
 
@@ -79,6 +80,7 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
 
     this.state = {
       numbers: new Map(props.event.items.map(item => [item.id, 0])),
+      clientName: null,
       status: "dbInitializing",
     };
 
@@ -94,6 +96,14 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
     this.application.addEventListener("dberror", () => {
       // TODO
     });
+    this.application.addEventListener(
+      "clientinfo",
+      (e: Event & { clientName?: string }) => {
+        if (e.clientName) {
+          this.clientNameChanged(e.clientName);
+        }
+      }
+    );
   }
 
   componentDidMount() {
@@ -108,9 +118,16 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
             <Typography component="h1" sx={{ flexGrow: 1 }}>
               { this.props.event.name }
             </Typography>
-            <IconButton aria-label="menu" color="inherit">
-              <MenuIcon />
-            </IconButton>
+            {
+              this.state.clientName && (
+                <>
+                  <Typography>{ this.state.clientName }</Typography>
+                  <IconButton color="inherit">
+                    <AccountCircleIcon />
+                  </IconButton>
+                </>
+              )
+            }
           </Toolbar>
         </AppBar>
         <Container sx={{ flex: "auto", overflowY: "auto" , py: 2 }}>
@@ -176,6 +193,12 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
     this.setState(currentState => ({
       numbers: new Map(currentState.numbers).set(id, newValue)
     }));
+  }
+
+  clientNameChanged = (newValue: string) => {
+    this.setState({
+      clientName: newValue,
+    });
   }
 
   registerButtonClicked = () => {

@@ -1,10 +1,10 @@
-import type { SalesRecord } from "@prisma/client";
+import type { Client, SalesRecord } from "@prisma/client";
 import { openDB } from "idb";
 import type { DBSchema, IDBPDatabase } from "idb";
 import PromiseProperty from "./PromiseProperty";
 import WebSocketMessage from "./WebSocketMessage";
 
-type ApplicationEventType = "statechange" | "dbopeningfailure" | "dberror";
+type ApplicationEventType = "statechange" | "dbopeningfailure" | "dberror" | "clientinfo";
 
 type TypedEvent<T extends string> = Event & { type: T };
 
@@ -84,15 +84,29 @@ class EventApplication extends EventTarget {
   }
 
   // ブラウザのみで実行されるcomponentDidMountから呼ぶ。
-  initialize() {
+  async initialize() {
     this.openDB();
     this.openWs();
+
     window.addEventListener("beforeunload", () => {
       this.wsBye();
     })
     window.addEventListener("online", () => {
       this.resumeWs();
     });
+
+    const clientName = await (await this.db).get("info", "clientName") as string | undefined;
+    if (clientName) {
+      this.dispatchClientInfoEvent(clientName);
+    }
+  }
+
+  private dispatchClientInfoEvent(clientName: string) {
+    const event: (
+      TypedEvent<"clientinfo"> & { clientName?: string }
+    ) = new EventObject("clientinfo");
+    event.clientName = clientName;
+    this.dispatchEvent(event);
   }
 
   // 以下、IndexedDB関係
@@ -153,10 +167,6 @@ class EventApplication extends EventTarget {
     this.triggerSync();
   }
 
-  private async dbReadClientInfo() {
-    // TODO
-  }
-
   // 以下、WebSocket関係
 
   private wsMessageReceived = (e: MessageEvent) => {
@@ -201,7 +211,7 @@ class EventApplication extends EventTarget {
     return this.ws;
   }
 
-  // this.wsはestablishした後でresolveするので、WebSocketオブジェクトは引数で受け取る。
+  // this.wsはhelloの後でresolveするので、WebSocketオブジェクトは引数で受け取る。
   private async wsSendHello(ws: WebSocket) {
     const clientId = await (await this.db).get("info", "clientId") as number | undefined;
     const helloMessage: WebSocketMessage.ClientHello = { eventId: this.eventId };
@@ -220,6 +230,7 @@ class EventApplication extends EventTarget {
         tx.store.add(data.clientInfo.name, "clientName"),
         tx.done,
       ]);
+      this.dispatchClientInfoEvent(data.clientInfo.name);
     }
     this.wsState = "online";
     this.ws.resolve(ws);
