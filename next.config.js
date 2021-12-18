@@ -6,6 +6,8 @@ module.exports = require('next-pwa')({
       handler: "NetworkFirst",
       urlPattern: ({ url, sameOrigin }) => (
         sameOrigin && url.pathname.match(/^\/events\/[^\/]*$/)
+        ||
+        url.pathname.match(/\.(jpg|png)$/)
       ),
     }]
   },
