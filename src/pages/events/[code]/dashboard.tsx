@@ -9,7 +9,7 @@ import type { WebSocketWithInfo } from "../../../server/websocket";
 type DashboardProps = {
   event: Event,
   items: Item[],
-  salesRecords: (SalesRecord & { items: ItemsOnSalesRecords[] })[],
+  salesRecords: (SalesRecord & { client: Client, items: ItemsOnSalesRecords[] })[],
   offlineClients: Client[],
   onlineClients: Client[],
 }
@@ -73,6 +73,7 @@ export const getServerSideProps: GetServerSideProps<DashboardProps> = async ({ p
       eventId: event.id
     },
     include: {
+      client: true,
       items: true,
     },
     orderBy: {
@@ -114,6 +115,7 @@ const Dashboard: React.FC<DashboardProps> = (props) => {
               <th key={ item.id }>{ item.name }</th>
             ))
           }
+          <th>端末</th>
         </tr>
         {
           props.salesRecords.map(salesRecord => (
@@ -126,6 +128,7 @@ const Dashboard: React.FC<DashboardProps> = (props) => {
                   </td>
                 ))
               }
+              <td>{ salesRecord.client.name }</td>
             </tr>
           ))
         }
