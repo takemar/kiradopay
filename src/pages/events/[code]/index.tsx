@@ -228,7 +228,7 @@ const ItemComponent: React.FC<ItemProps> = ({ item, number, onNumberChange }) =>
     <CardMedia
       component="img"
       image={ item.img || "about:blank" }
-      sx={{ flex: "1 1 0", alignSelf: "stretch", objectFit: "contain", background: "black" }}
+      sx={{ flex: "1 1 0", width: "25%", alignSelf: "stretch", objectFit: "contain", background: "black" }}
     />
     <CardContent sx={{ flex: "3 1 0", alignSelf: "center", display: "flex", flexDirection: "column", gap: 1 }}>
       <Typography component="b" sx={{ fontWeight: "bold" }}>
