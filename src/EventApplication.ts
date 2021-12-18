@@ -229,7 +229,9 @@ class EventApplication extends EventTarget {
   private wsClosed = (e: CloseEvent) => {
     this.wsState = "offline";
     this.ws = new PromiseProperty<WebSocket>();
-    // TODO
+    if (e.code === 1000) {
+      return;
+    }
     this.wsTimeoutId = window.setTimeout(() => {
       this.wsTimeoutDelay *= 2;
       this.resumeWs();
@@ -273,8 +275,12 @@ class EventApplication extends EventTarget {
     // TODO
   }
 
-  private wsBye() {
-    // TODO
+  private async wsBye() {
+    const salesRecords = await (await this.db).getAll("sales_records");
+    if (salesRecords.length === 0) {
+      await this.wsSend({ type: "bye" });
+      (await this.ws).close(1000);
+    }
   }
 };
 

@@ -10,9 +10,6 @@ namespace WebSocketMessage {
   };
   export type Store = (Omit<SalesRecord, "clientId"> & { items: { itemId: number, number: number }[] })[];
   export type Stored = string[];
-  export type Bye = {
-    clientId: number,
-  };
   export type Upward = (
     {
       type: "client-hello",
@@ -26,7 +23,6 @@ namespace WebSocketMessage {
     |
     {
       type: "bye",
-      data: Bye,
     }
   );
   export type Downward = (
