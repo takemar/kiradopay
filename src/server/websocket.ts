@@ -1,9 +1,11 @@
 import { WebSocketServer } from "ws";
+import type WebSocket from "ws";
 import { PrismaClient } from "@prisma/client"
 import WebSocketMessage from "../WebSocketMessage";
 import names from "../names.json";
 
 type ConnectionInfo = { clientId: number | null, eventId: number | null };
+type WebSocketWithInfo = WebSocket & { info?: ConnectionInfo };
 
 const prisma = new PrismaClient();
 
@@ -11,9 +13,10 @@ export default function webSocketServer(
   { dev = false, ...options }: ConstructorParameters<typeof WebSocketServer>[0] & { dev?: boolean },
   ...rest: ConstructorParameters<typeof WebSocketServer> extends [any?, ...infer T] ? T : []
 ) {
-  const wss =  new WebSocketServer(options);
-  wss.on("connection", ws => {
+  const wss =  new WebSocketServer(options, ...rest);
+  wss.on("connection", (ws: WebSocketWithInfo) => {
     const connectionInfo: ConnectionInfo = { clientId: null, eventId: null };
+    ws.info = connectionInfo;
     ws.on("message", async (rawData, isBinary) => {
       if (isBinary) {
         throw new TypeError;
@@ -38,7 +41,7 @@ export default function webSocketServer(
           };
           break;
         case "bye":
-          await bye(connectionInfo);
+          await bye(wss, ws);
           ws.close(1000);
           return;
       }
@@ -98,17 +101,28 @@ async function handleStoreRequest(data: WebSocketMessage.Store, connectionInfo: 
   return data.map(salesRecord => salesRecord.code);
 }
 
-async function bye(connectionInfo: ConnectionInfo) {
-  if (!(connectionInfo.clientId && connectionInfo.eventId)) {
+async function bye(wss: WebSocketServer,connection: WebSocketWithInfo) {
+  const info = connection.info;
+  if (!(info && info.clientId && info.eventId)) {
     throw new Error;
   }
+
+  // まだこのサーバで接続中のクライアントがあれば、終了処理はしない。
+  if (
+    Array.from(wss.clients).some((ws: WebSocketWithInfo) => (
+      ws !== connection && ws.info?.clientId === info.clientId && ws.info?.eventId === info.eventId
+    ))
+  ) {
+    return;
+  }
+
   await prisma.client.update({
     where: {
-      id: connectionInfo.clientId,
+      id: info.clientId,
     },
     data: {
       openningEvents: {
-        disconnect: [{ id: connectionInfo.eventId }],
+        disconnect: [{ id: info.eventId }],
       },
     },
   });
