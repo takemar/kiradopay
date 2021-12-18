@@ -13,7 +13,7 @@ import {
   HourglassBottom as HourglassBottomIcon,
   Menu as MenuIcon,
 } from "@mui/icons-material";
-import EventApplication, { DBState, WsState } from "../../EventApplication";
+import EventApplication, { DBState, WsState } from "../../../EventApplication";
 
 type EventPageProps = {
   event: Event & { items: Item[] }
