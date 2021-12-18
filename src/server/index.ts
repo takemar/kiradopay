@@ -17,7 +17,7 @@ import webSocketServer from "./websocket";
     }
   });
 
-  const app = next({ dev });
+  const app = next({ dev, conf: { serverRuntimeConfig: { wss: wsServer }}});
   const handle = app.getRequestHandler();
   await app.prepare();
   httpServer.on("request", (req, res) => {

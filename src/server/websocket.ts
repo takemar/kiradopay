@@ -5,7 +5,7 @@ import WebSocketMessage from "../WebSocketMessage";
 import names from "../names.json";
 
 type ConnectionInfo = { clientId: number | null, eventId: number | null };
-type WebSocketWithInfo = WebSocket & { info?: ConnectionInfo };
+export type WebSocketWithInfo = WebSocket & { info?: ConnectionInfo };
 
 const prisma = new PrismaClient();
 
