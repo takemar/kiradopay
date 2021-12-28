@@ -2,23 +2,14 @@ import type { Client, SalesRecord } from "@prisma/client";
 import { openDB } from "idb";
 import type { DBSchema, IDBPDatabase } from "idb";
 import superjson from "superjson";
+import type { TypedEvent, TypedEventConstructor, TypedEventTarget } from "./typed-event";
 import PromiseProperty from "./PromiseProperty";
 import WebSocketMessage from "./WebSocketMessage";
 
 type ApplicationEventType = "statechange" | "dbopeningfailure" | "dberror" | "clientinfo";
 
-type TypedEvent<T extends string> = Event & { type: T };
-
 // DOM Event Object
-const EventObject = Event as (
-  Omit<typeof Event, "new">
-  & {
-    new<T extends string>(
-      type: T,
-      ...rest: ConstructorParameters<(typeof Event)> extends [any, ...infer U] ? U : []
-    ): TypedEvent<T>;
-  }
-);
+const EventObject = Event as TypedEventConstructor;
 
 export type DBState = "uninitialized" | "opening" | "blocked" | "open" | "registering" | "error";
 
@@ -35,25 +26,7 @@ interface DB extends DBSchema {
   },
 }
 
-interface EventApplication extends EventTarget {
-
-  addEventListener(
-    type: ApplicationEventType,
-    ...rest: Parameters<EventTarget["addEventListener"]> extends [any, ...infer U] ? U : []
-  ): ReturnType<EventTarget["addEventListener"]>;
-
-  removeEventListener(
-    type: ApplicationEventType,
-    ...rest: Parameters<EventTarget["removeEventListener"]> extends [any, ...infer U] ? U : []
-  ): ReturnType<EventTarget["removeEventListener"]>;
-
-  dispatchEvent(
-    event: TypedEvent<ApplicationEventType>,
-    ...rest: Parameters<EventTarget["dispatchEvent"]> extends [any, ...infer U] ? U : []
-  ): ReturnType<EventTarget["dispatchEvent"]>;
-}
-
-class EventApplication extends EventTarget {
+class EventApplication extends EventTarget implements TypedEventTarget<ApplicationEventType> {
 
   private eventId: number;
   private db: PromiseProperty<IDBPDatabase<DB>>;
