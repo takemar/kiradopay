@@ -1,6 +1,7 @@
 import type { Client, SalesRecord } from "@prisma/client";
 import { openDB } from "idb";
 import type { DBSchema, IDBPDatabase } from "idb";
+import superjson from "superjson";
 import PromiseProperty from "./PromiseProperty";
 import WebSocketMessage from "./WebSocketMessage";
 
@@ -173,7 +174,7 @@ class EventApplication extends EventTarget {
     if (typeof e.data !== "string") {
       throw new TypeError;
     }
-    const message = JSON.parse(e.data) as WebSocketMessage.Downward;
+    const message = superjson.parse(e.data) as WebSocketMessage.Downward;
     switch (message.type) {
       case "server-hello":
         this.wsHelloReceived(message.data, e.target as WebSocket);
@@ -188,7 +189,7 @@ class EventApplication extends EventTarget {
   }
 
   private async wsSend(message: WebSocketMessage.Upward) {
-    (await this.ws).send(JSON.stringify(message));
+    (await this.ws).send(superjson.stringify(message));
   }
 
   private async openWs() {
@@ -218,7 +219,7 @@ class EventApplication extends EventTarget {
     if (clientId) {
       helloMessage.clientId = clientId;
     }
-    ws.send(JSON.stringify({ type: "client-hello", data: helloMessage }));
+    ws.send(superjson.stringify({ type: "client-hello", data: helloMessage }));
   }
 
   // this.wsはこのメソッドの中でresolveするので、WebSocketオブジェクトは引数で受け取る。

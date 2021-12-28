@@ -1,6 +1,7 @@
 import { WebSocketServer } from "ws";
 import type WebSocket from "ws";
 import { PrismaClient } from "@prisma/client"
+import superjson from "superjson";
 import WebSocketMessage from "../WebSocketMessage";
 import names from "../names.json";
 
@@ -24,7 +25,7 @@ export default function webSocketServer(
       if (dev) {
         console.log(rawData.toString());
       }
-      const message = JSON.parse(rawData.toString()) as WebSocketMessage.Upward;
+      const message = superjson.parse(rawData.toString()) as WebSocketMessage.Upward;
 
       let response: WebSocketMessage.Downward;
       switch (message.type) {
@@ -45,7 +46,7 @@ export default function webSocketServer(
           ws.close(1000);
           return;
       }
-      ws.send(JSON.stringify(response));
+      ws.send(superjson.stringify(response));
     });
   });
   return wss;
