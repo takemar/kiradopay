@@ -36,11 +36,11 @@ class EventApplication extends EventTarget implements TypedEventTarget<Applicati
   }
   get wsState(): WsState { return this._wsState; }
 
-  constructor(eventId: number) {
+  constructor({ eventId, idb }: { eventId: number, idb: AppIDB }) {
     super();
 
     this.eventId = eventId;
-    this.db = new AppIDB();
+    this.db = idb;
     this.ws = new PromiseProperty<WebSocket>();
   }
 

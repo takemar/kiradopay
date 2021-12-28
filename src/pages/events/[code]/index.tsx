@@ -14,6 +14,7 @@ import {
   HourglassBottom as HourglassBottomIcon,
 } from "@mui/icons-material";
 import EventApplication, { DBState, WsState } from "../../../EventApplication";
+import AppIDB from "../../../AppIDB";
 
 type EventPageProps = {
   event: EventObject & { items: Item[] }
@@ -47,6 +48,7 @@ export const getServerSideProps: GetServerSideProps<EventPageProps> = async ({ p
 export default class EventPage extends React.Component<EventPageProps, EventPageState> {
 
   application: EventApplication;
+  idb: AppIDB;
 
   static status(dbState: DBState, wsState: WsState): StatusType {
     switch (dbState) {
@@ -84,7 +86,12 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
       status: "dbInitializing",
     };
 
-    this.application = new EventApplication(this.props.event.id);
+    this.idb = new AppIDB();
+
+    this.application = new EventApplication({
+      eventId: this.props.event.id,
+      idb: this.idb,
+    });
     this.application.addEventListener("statechange", () => {
       this.setState({
         status: EventPage.status(
