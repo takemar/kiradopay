@@ -166,10 +166,10 @@ class EventApplication extends EventTarget implements TypedEventTarget<Applicati
 
   // this.wsはhelloの後でresolveするので、WebSocketオブジェクトは引数で受け取る。
   private async wsSendHello(ws: WebSocket) {
-    const clientId = await (await this.db).get("info", "clientId") as number | undefined;
+    const client = await (await this.db).get("info", "client");
     const helloMessage: WebSocketMessage.ClientHello = { eventId: this.eventId };
-    if (clientId) {
-      helloMessage.clientId = clientId;
+    if (client) {
+      helloMessage.clientId = client.id;
     }
     ws.send(superjson.stringify({ type: "client-hello", data: helloMessage }));
   }
@@ -177,12 +177,7 @@ class EventApplication extends EventTarget implements TypedEventTarget<Applicati
   // this.wsはこのメソッドの中でresolveするので、WebSocketオブジェクトは引数で受け取る。
   private async wsHelloReceived(data: WebSocketMessage.ServerHello, ws: WebSocket) {
     if (data.clientInfo) {
-      const tx = (await this.db).transaction("info", "readwrite");
-      await Promise.all([
-        tx.store.add(data.clientInfo.id, "clientId"),
-        tx.store.add(data.clientInfo.name, "clientName"),
-        tx.done,
-      ]);
+      await (await this.db).add("info", data.clientInfo, "client");
       this.dispatchClientInfoEvent(data.clientInfo.name);
     }
     this.wsState = "online";
