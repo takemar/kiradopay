@@ -1,9 +1,7 @@
-import type { Client, SalesRecord } from "@prisma/client";
-import { openDB } from "idb";
-import type { DBSchema, IDBPDatabase } from "idb";
 import superjson from "superjson";
 import type { TypedEvent, TypedEventConstructor, TypedEventTarget } from "./typed-event";
 import PromiseProperty from "./PromiseProperty";
+import AppIDB from "./AppIDB";
 import WebSocketMessage from "./WebSocketMessage";
 
 type ApplicationEventType = "statechange" | "dbopeningfailure" | "dberror" | "clientinfo";
@@ -15,21 +13,10 @@ export type DBState = "uninitialized" | "opening" | "blocked" | "open" | "regist
 
 export type WsState = "uninitialized" | "connecting" | "hello" | "online" | "syncing" | "offline";
 
-interface DB extends DBSchema {
-  info: {
-    key: string,
-    value: any,
-  },
-  sales_records: {
-    key: string,
-    value: Omit<SalesRecord, "clientId"> & { items: { itemId: number, number: number }[] },
-  },
-}
-
 class EventApplication extends EventTarget implements TypedEventTarget<ApplicationEventType> {
 
   private eventId: number;
-  private db: PromiseProperty<IDBPDatabase<DB>>;
+  private db: AppIDB;
   private ws: PromiseProperty<WebSocket>;
   private _dbState: DBState = "uninitialized";
   private _wsState: WsState = "uninitialized";
@@ -53,7 +40,7 @@ class EventApplication extends EventTarget implements TypedEventTarget<Applicati
     super();
 
     this.eventId = eventId;
-    this.db = new PromiseProperty<IDBPDatabase<DB>>();
+    this.db = new AppIDB();
     this.ws = new PromiseProperty<WebSocket>();
   }
 
@@ -88,15 +75,7 @@ class EventApplication extends EventTarget implements TypedEventTarget<Applicati
   private openDB() {
     const self = this;
 
-    this.db.resolve(openDB("kiradopay", 2, {
-      upgrade(db, oldVersion, _newVersion, _transaction) {
-        if (oldVersion < 1) {
-          db.createObjectStore("sales_records", { keyPath: "code" });
-        }
-        if (oldVersion < 2) {
-          db.createObjectStore("info");
-        }
-      },
+    this.db.open({
       blocked() {
         self.dbState = "blocked";
       },
@@ -104,7 +83,7 @@ class EventApplication extends EventTarget implements TypedEventTarget<Applicati
         self.dbState = "error";
         self.dispatchEvent(new EventObject("dberror"));
       },
-    })).then(() => {
+    }).then(() => {
       this.dbState = "open";
     }).catch(() => {
       this.dbState = "error";
