@@ -13,14 +13,34 @@ interface DB extends DBSchema {
   },
 }
 
+type BlockedValue = ReturnType<Required<OpenDBCallbacks<DB>>["blocked"]>;
+type BlockingValue = ReturnType<Required<OpenDBCallbacks<DB>>["blocking"]>;
+type TerminatedValue = ReturnType<Required<OpenDBCallbacks<DB>>["terminated"]>;
+
 export default class AppIDB implements PromiseLike<IDBPDatabase<DB>> {
 
-  promise: Promise<IDBPDatabase<DB>>;
-  resolutionFunc?: (value: IDBPDatabase<DB> | PromiseLike<IDBPDatabase<DB>>) => void;
+  private promise: Promise<IDBPDatabase<DB>>;
+  private resolutionFunc?: (value: IDBPDatabase<DB> | PromiseLike<IDBPDatabase<DB>>) => void;
+  private resolved: boolean = false;
+  private blockedPromise: Promise<BlockedValue>;
+  private blockedFunc?: (value: BlockedValue | PromiseLike<BlockedValue>) => void;
+  private blockingPromise: Promise<BlockingValue>;
+  private blockingFunc?: (value: BlockingValue | PromiseLike<BlockingValue>) => void;
+  private terminatedPromise: Promise<TerminatedValue>;
+  private terminatedFunc?: (value: TerminatedValue | PromiseLike<TerminatedValue>) => void;
 
   constructor() {
-    this.promise = new Promise<IDBPDatabase<DB>>(resolutionFunc => {
+    this.promise = new Promise(resolutionFunc => {
       this.resolutionFunc = resolutionFunc;
+    });
+    this.blockedPromise = new Promise(resolutionFunc => {
+      this.blockedFunc = resolutionFunc;
+    });
+    this.blockingPromise = new Promise(resolutionFunc => {
+      this.blockingFunc = resolutionFunc;
+    });
+    this.terminatedPromise = new Promise(resolutionFunc => {
+      this.terminatedFunc = resolutionFunc;
     });
   }
 
@@ -31,18 +51,34 @@ export default class AppIDB implements PromiseLike<IDBPDatabase<DB>> {
     return this.promise.then(onFulfilled, onRejected);
   }
 
-  open(callbacks: Omit<OpenDBCallbacks<DB>, "upgrade">) {
-    this.resolutionFunc!(openDB("kiradopay", 2, {
-      upgrade(db, oldVersion, _newVersion, _transaction) {
-        if (oldVersion < 1) {
-          db.createObjectStore("sales_records", { keyPath: "code" });
+  open({ blocked, blocking, terminated }: Omit<OpenDBCallbacks<DB>, "upgrade">) {
+    this.blockedPromise.then(blocked);
+    this.blockingPromise.then(blocking);
+    this.terminatedPromise.then(terminated);
+
+    const self = this;
+    if (!this.resolved) {
+      this.resolutionFunc!(openDB("kiradopay", 2, {
+        upgrade(db, oldVersion, _newVersion, _transaction) {
+          if (oldVersion < 1) {
+            db.createObjectStore("sales_records", { keyPath: "code" });
+          }
+          if (oldVersion < 2) {
+            db.createObjectStore("info");
+          }
+        },
+        blocked() {
+          self.blockedFunc!();
+        },
+        blocking() {
+          self.blockingFunc!();
+        },
+        terminated() {
+          self.terminatedFunc!();
         }
-        if (oldVersion < 2) {
-          db.createObjectStore("info");
-        }
-      },
-      ...callbacks,
-    }));
+      }));
+      this.resolved = true;
+    }
     return this;
   }
 }
