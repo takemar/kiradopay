@@ -36,14 +36,16 @@ export class ClientInfo {
     this.initialized = true;
     const dbData = await (await this.idb.open()).get("info", "client");
     if (dbData) {
-      this.resolutionFunc!(dbData);
+      this.resolve(dbData);
       return;
     }
     const response = await fetch("/api/clients/new", { method: "POST" });
     if (!response.ok) {
       this.reject!(await response.json());
     }
-    this.resolve(await response.json() as Client);
+    const fetchedData = await response.json();
+    await (await this.idb).put("info", fetchedData, "client");
+    this.resolve(await fetchedData as Client);
   }
 
   getOrThrow(): Client {
@@ -59,8 +61,8 @@ export class ClientInfo {
   }
 }
 
-export const ClientName: React.FC<ClientInfo> = info => (
+export const ClientName: React.FC<{ info: ClientInfo }> = ({ info }) => (
   <>
-    { info.getOrThrow() }
+    { info.getOrThrow().name }
   </>
 );
