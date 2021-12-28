@@ -3,8 +3,9 @@ import type { TypedEvent, TypedEventConstructor, TypedEventTarget } from "./type
 import PromiseProperty from "./PromiseProperty";
 import AppIDB from "./AppIDB";
 import WebSocketMessage from "./WebSocketMessage";
+import { ClientInfo } from "./client-info";
 
-type ApplicationEventType = "statechange" | "dbopeningfailure" | "dberror" | "clientinfo";
+type ApplicationEventType = "statechange" | "dbopeningfailure" | "dberror";
 
 // DOM Event Object
 const EventObject = Event as TypedEventConstructor;
@@ -18,6 +19,7 @@ class EventApplication extends EventTarget implements TypedEventTarget<Applicati
   private eventId: number;
   private db: AppIDB;
   private ws: PromiseProperty<WebSocket>;
+  private clientInfo: ClientInfo;
   private _dbState: DBState = "uninitialized";
   private _wsState: WsState = "uninitialized";
   private WS_TIMEOUT_DELAY_INITIAL = 1000;
@@ -36,16 +38,18 @@ class EventApplication extends EventTarget implements TypedEventTarget<Applicati
   }
   get wsState(): WsState { return this._wsState; }
 
-  constructor({ eventId, idb }: { eventId: number, idb: AppIDB }) {
+  constructor({ eventId, idb, clientInfo }: { eventId: number, idb: AppIDB, clientInfo: ClientInfo }) {
     super();
 
     this.eventId = eventId;
+    this.clientInfo = clientInfo;
     this.db = idb;
     this.ws = new PromiseProperty<WebSocket>();
   }
 
   // ブラウザのみで実行されるcomponentDidMountから呼ぶ。
   async initialize() {
+    this.clientInfo.initialize();
     this.openDB();
     this.openWs();
 
@@ -55,19 +59,6 @@ class EventApplication extends EventTarget implements TypedEventTarget<Applicati
     window.addEventListener("online", () => {
       this.resumeWs();
     });
-
-    const clientName = await (await this.db).get("info", "clientName") as string | undefined;
-    if (clientName) {
-      this.dispatchClientInfoEvent(clientName);
-    }
-  }
-
-  private dispatchClientInfoEvent(clientName: string) {
-    const event: (
-      TypedEvent<"clientinfo"> & { clientName?: string }
-    ) = new EventObject("clientinfo");
-    event.clientName = clientName;
-    this.dispatchEvent(event);
   }
 
   // 以下、IndexedDB関係
@@ -129,7 +120,7 @@ class EventApplication extends EventTarget implements TypedEventTarget<Applicati
     const message = superjson.parse(e.data) as WebSocketMessage.Downward;
     switch (message.type) {
       case "server-hello":
-        this.wsHelloReceived(message.data, e.target as WebSocket);
+        this.wsHelloReceived(e.target as WebSocket);
         break;
       case "stored":
         this.wsSynced(message.data);
@@ -166,20 +157,14 @@ class EventApplication extends EventTarget implements TypedEventTarget<Applicati
 
   // this.wsはhelloの後でresolveするので、WebSocketオブジェクトは引数で受け取る。
   private async wsSendHello(ws: WebSocket) {
-    const client = await (await this.db).get("info", "client");
-    const helloMessage: WebSocketMessage.ClientHello = { eventId: this.eventId };
-    if (client) {
-      helloMessage.clientId = client.id;
-    }
-    ws.send(superjson.stringify({ type: "client-hello", data: helloMessage }));
+    const client = await this.clientInfo.getAsync();
+    const data = { eventId: this.eventId, clientId: client.id };
+    const message: WebSocketMessage.Upward = { type: "client-hello", data };
+    ws.send(superjson.stringify(message));
   }
 
   // this.wsはこのメソッドの中でresolveするので、WebSocketオブジェクトは引数で受け取る。
-  private async wsHelloReceived(data: WebSocketMessage.ServerHello, ws: WebSocket) {
-    if (data.clientInfo) {
-      await (await this.db).add("info", data.clientInfo, "client");
-      this.dispatchClientInfoEvent(data.clientInfo.name);
-    }
+  private async wsHelloReceived(ws: WebSocket) {
     this.wsState = "online";
     this.ws.resolve(ws);
     this.sync();

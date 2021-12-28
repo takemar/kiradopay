@@ -3,7 +3,6 @@ import type WebSocket from "ws";
 import { PrismaClient } from "@prisma/client"
 import superjson from "superjson";
 import WebSocketMessage from "../WebSocketMessage";
-import names from "../names.json";
 
 type ConnectionInfo = { clientId: number | null, eventId: number | null };
 export type WebSocketWithInfo = WebSocket & { info?: ConnectionInfo };
@@ -54,31 +53,18 @@ export default function webSocketServer(
 
 async function handleClientHello(data: WebSocketMessage.ClientHello, connectionInfo: ConnectionInfo) {
   connectionInfo.eventId = data.eventId;
-  if (data.clientId) {
-    connectionInfo.clientId = data.clientId;
-    await prisma.event.update({
-      where: {
-        id: data.eventId
-      },
-      data: {
-        openningClients: {
-          connect: [{ id: data.clientId }]
-        }
+  connectionInfo.clientId = data.clientId;
+  await prisma.event.update({
+    where: {
+      id: data.eventId
+    },
+    data: {
+      openningClients: {
+        connect: [{ id: data.clientId }]
       }
-    });
-    return { type: "server-hello", data: {}};
-  } else {
-    const client = await prisma.client.create({
-      data: {
-        name: names[Math.floor(Math.random() * names.length)],
-        openningEvents: {
-          connect: [{ id: data.eventId }],
-        },
-      },
-    });
-    connectionInfo.clientId = client.id;
-    return { clientInfo: client };
-  }
+    }
+  });
+  return {};
 }
 
 async function handleStoreRequest(data: WebSocketMessage.Store, connectionInfo: ConnectionInfo) {

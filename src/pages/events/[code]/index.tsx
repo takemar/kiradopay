@@ -15,6 +15,7 @@ import {
 } from "@mui/icons-material";
 import EventApplication, { DBState, WsState } from "../../../EventApplication";
 import AppIDB from "../../../AppIDB";
+import { ClientInfo } from "../../../client-info";
 
 type EventPageProps = {
   event: EventObject & { items: Item[] }
@@ -91,6 +92,7 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
     this.application = new EventApplication({
       eventId: this.props.event.id,
       idb: this.idb,
+      clientInfo: new ClientInfo({ idb: this.idb }),
     });
     this.application.addEventListener("statechange", () => {
       this.setState({
@@ -103,14 +105,6 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
     this.application.addEventListener("dberror", () => {
       // TODO
     });
-    this.application.addEventListener(
-      "clientinfo",
-      (e: Event & { clientName?: string }) => {
-        if (e.clientName) {
-          this.clientNameChanged(e.clientName);
-        }
-      }
-    );
   }
 
   componentDidMount() {
@@ -200,12 +194,6 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
     this.setState(currentState => ({
       numbers: new Map(currentState.numbers).set(id, newValue)
     }));
-  }
-
-  clientNameChanged = (newValue: string) => {
-    this.setState({
-      clientName: newValue,
-    });
   }
 
   registerButtonClicked = () => {

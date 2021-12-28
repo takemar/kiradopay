@@ -51,10 +51,10 @@ export default class AppIDB implements PromiseLike<IDBPDatabase<DB>> {
     return this.promise.then(onFulfilled, onRejected);
   }
 
-  open({ blocked, blocking, terminated }: Omit<OpenDBCallbacks<DB>, "upgrade">) {
-    this.blockedPromise.then(blocked);
-    this.blockingPromise.then(blocking);
-    this.terminatedPromise.then(terminated);
+  open(callbacks: Omit<OpenDBCallbacks<DB>, "upgrade"> = {}) {
+    this.blockedPromise.then(callbacks.blocked);
+    this.blockingPromise.then(callbacks.blocking);
+    this.terminatedPromise.then(callbacks.terminated);
 
     const self = this;
     if (!this.resolved) {
