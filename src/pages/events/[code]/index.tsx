@@ -1,8 +1,8 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { GetServerSideProps } from "next";
 import { PrismaClient } from "@prisma/client";
 import type { Client, Event as EventObject, Item } from "@prisma/client";
-import { AppBar, Box, Card, CardContent, CardMedia, CircularProgress, Container, Grid, IconButton, LinearProgress, Paper, Toolbar, Typography } from "@mui/material";
+import { AppBar, Box, Card, CardContent, CardMedia, CircularProgress, Container, Grid, IconButton, LinearProgress, NoSsr, Paper, Toolbar, Typography } from "@mui/material";
 import Button, { ButtonProps } from "@mui/material/Button"
 import {
   AccountCircle as AccountCircleIcon,
@@ -15,7 +15,7 @@ import {
 } from "@mui/icons-material";
 import EventApplication, { DBState, WsState } from "../../../EventApplication";
 import AppIDB from "../../../AppIDB";
-import { ClientInfo } from "../../../client-info";
+import { ClientInfo, ClientName } from "../../../client-info";
 
 type EventPageProps = {
   event: EventObject & { items: Item[] }
@@ -49,6 +49,7 @@ export const getServerSideProps: GetServerSideProps<EventPageProps> = async ({ p
 export default class EventPage extends React.Component<EventPageProps, EventPageState> {
 
   application: EventApplication;
+  clientInfo: ClientInfo;
   idb: AppIDB;
 
   static status(dbState: DBState, wsState: WsState): StatusType {
@@ -88,11 +89,11 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
     };
 
     this.idb = new AppIDB();
-
+    this.clientInfo = new ClientInfo({ idb: this.idb });
     this.application = new EventApplication({
       eventId: this.props.event.id,
       idb: this.idb,
-      clientInfo: new ClientInfo({ idb: this.idb }),
+      clientInfo: this.clientInfo,
     });
     this.application.addEventListener("statechange", () => {
       this.setState({
@@ -108,6 +109,7 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
   }
 
   componentDidMount() {
+    this.clientInfo.initialize();
     this.application.initialize();
   }
 
@@ -119,16 +121,16 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
             <Typography component="h1" sx={{ flexGrow: 1 }}>
               { this.props.event.name }
             </Typography>
-            {
-              this.state.clientName && (
-                <>
-                  <Typography>{ this.state.clientName }</Typography>
-                  <IconButton color="inherit">
-                    <AccountCircleIcon />
-                  </IconButton>
-                </>
-              )
-            }
+            <NoSsr>
+              <Suspense fallback={ null }>
+                <Typography>
+                  <ClientName info={ this.clientInfo } />
+                </Typography>
+              </Suspense>
+            </NoSsr>
+            <IconButton color="inherit">
+              <AccountCircleIcon />
+            </IconButton>
           </Toolbar>
         </AppBar>
         <Container sx={{ flex: "auto", overflowY: "auto" , py: 2 }}>
