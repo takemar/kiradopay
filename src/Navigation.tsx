@@ -1,20 +1,19 @@
 import React, { Suspense, useRef, useState } from "react";
-import { AppBar, Button, Menu, NoSsr, Toolbar, Typography } from "@mui/material";
+import { AppBar, AppBarProps, Button, Menu, NoSsr, Toolbar, Typography } from "@mui/material";
 import { Settings as SettingsIcon } from "@mui/icons-material";
 import { ClientInfo, ClientName } from "./client-info"
 
 type NavigationProps = {
   clientInfo: ClientInfo,
   title?: string,
+} & AppBarProps;
 
-};
-
-const Navigation: React.FC<NavigationProps> = ({ children, clientInfo, title }) => {
+const Navigation: React.FC<NavigationProps> = ({ children, clientInfo, title, ...props }) => {
   const [open, setOpen] = useState<boolean>(false);
   const anchorEl = useRef(null);
 
   return(
-    <AppBar position="static">
+    <AppBar position="static" { ...props }>
       <Toolbar variant="dense" ref={ anchorEl }>
         <Typography component="h1" sx={{ flexGrow: 1 }}>
           { title }
