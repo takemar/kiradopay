@@ -1,10 +1,14 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { GetServerSideProps } from "next";
 import getConfig from "next/config";
 import { PrismaClient } from "@prisma/client";
 import type { Client, Event, Item, ItemsOnSalesRecords, SalesRecord } from "@prisma/client";
 import { WebSocketServer } from "ws";
+import { Box, Container, MenuItem } from "@mui/material";
 import type { WebSocketWithInfo } from "../../../server/websocket";
+import Navigation from "../../../Navigation";
+import AppIDB from "../../../AppIDB";
+import { ClientInfo } from "../../../client-info";
 
 type DashboardProps = {
   event: Event,
@@ -87,8 +91,23 @@ export const getServerSideProps: GetServerSideProps<DashboardProps> = async ({ p
 };
 
 const Dashboard: React.FC<DashboardProps> = (props) => {
+  const [clientInfo, _] = useState(new ClientInfo({ idb: new AppIDB() }));
+  useEffect(() => {
+    clientInfo.initialize();
+  }, [clientInfo]);
+
   return(
-    <>
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <Navigation clientInfo={ clientInfo } title={ props.event.name }>
+        {/* FIXME: これは <ul><a></a></ul> を生産する。 */}
+        <MenuItem component="a" href="/">
+          トップ
+        </MenuItem>
+        <MenuItem component="a" href={ `/events/${ props.event.code }` }>
+          このイベントのレジ画面
+        </MenuItem>
+      </Navigation>
+      <Container sx={{ flex: "auto", overflowY: "auto" , py: 2 }}>
       <h1>{ props.event.name }</h1>
       <h2>接続中の端末</h2>
       <ul>
@@ -133,7 +152,8 @@ const Dashboard: React.FC<DashboardProps> = (props) => {
           ))
         }
       </table>
-    </>
+      </Container>
+    </Box>
   );
 }
 

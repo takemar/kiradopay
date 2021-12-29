@@ -1,11 +1,10 @@
-import React, { Suspense } from "react";
+import React from "react";
 import { GetServerSideProps } from "next";
 import { PrismaClient } from "@prisma/client";
-import type { Client, Event as EventObject, Item } from "@prisma/client";
-import { AppBar, Box, Card, CardContent, CardMedia, CircularProgress, Container, Grid, IconButton, LinearProgress, NoSsr, Paper, Toolbar, Typography } from "@mui/material";
+import type { Event as EventObject, Item } from "@prisma/client";
+import { Box, Card, CardContent, CardMedia, CircularProgress, Container, Grid, LinearProgress, MenuItem, Paper, Typography } from "@mui/material";
 import Button, { ButtonProps } from "@mui/material/Button"
 import {
-  AccountCircle as AccountCircleIcon,
   Cancel as CancelIcon,
   CloudDone as CloudDoneIcon,
   CloudOff as CloudOffIcon,
@@ -18,6 +17,7 @@ import AppIDB from "../../../AppIDB";
 import { ClientInfo, ClientName } from "../../../client-info";
 import CalculatorInterface from "../../../CalculatorInterface";
 import calculator from "../../../calculator";
+import Navigation from "../../../Navigation";
 
 type EventPageProps = {
   event: EventObject & { items: Item[] }
@@ -119,23 +119,12 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
   render() {
     return (
       <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
-        <AppBar position="static">
-          <Toolbar variant="dense">
-            <Typography component="h1" sx={{ flexGrow: 1 }}>
-              { this.props.event.name }
-            </Typography>
-            <NoSsr>
-              <Suspense fallback={ null }>
-                <Typography>
-                  <ClientName info={ this.clientInfo } />
-                </Typography>
-              </Suspense>
-            </NoSsr>
-            <IconButton color="inherit">
-              <AccountCircleIcon />
-            </IconButton>
-          </Toolbar>
-        </AppBar>
+        <Navigation clientInfo={ this.clientInfo } title={ this.props.event.name }>
+          {/* FIXME: これは <ul><a></a></ul> を生産する。 */}
+          <MenuItem component="a" href="/">
+            トップ
+          </MenuItem>
+        </Navigation>
         <Container sx={{ flex: "auto", overflowY: "auto" , py: 2 }}>
           <Grid container spacing={1} alignItems="stretch">
             {
