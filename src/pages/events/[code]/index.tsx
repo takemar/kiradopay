@@ -29,6 +29,7 @@ type EventPageState = {
   numbers: Map<number, number>,
   clientName: string | null,
   status: StatusType,
+  timerStartTime: number| null,
 }
 
 type StatusType = "dbInitializing" | "dbBlocked" | "wsInitializing" | "synced" | "registering" | "syncing" | "offline" | "error";
@@ -91,6 +92,7 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
       numbers: new Map(props.event.items.map(item => [item.id, 0])),
       clientName: null,
       status: "dbInitializing",
+      timerStartTime: null,
     };
 
     this.idb = new AppIDB();
@@ -163,10 +165,13 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
                     || Array.from(this.state.numbers).map(([_, number]) => number).every(x => x === 0)
                   }
                   onClick={ this.registerButtonClicked }
-                  sx={{ px: 4 }}
+                  sx={{ px: 4, my: 0.5 }}
                 >
                   登録
                 </LargeButton>
+                <Box sx={{ fontSize: "0.75em", height: "1.25em" }}>
+                  <Timer startTime={ this.state.timerStartTime }/>
+                </Box>
               </Box>
             </Box>
           </Container>
@@ -186,6 +191,9 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
   }
 
   registerButtonClicked = () => {
+    this.setState({
+      timerStartTime: null,
+    })
     const items = (
       Array.from(this.state.numbers)
       .map(([itemId, number]) => ({ itemId, number }))
@@ -193,7 +201,8 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
     );
     this.application.register({ items, totalAmount: this.totalAmount() }).then(() => {
       this.setState({
-        numbers: new Map(this.props.event.items.map(item => [item.id, 0]))
+        numbers: new Map(this.props.event.items.map(item => [item.id, 0])),
+        timerStartTime: Date.now(),
       });
     }).catch(() => {
       window.alert("ブラウザのデータベース (IndexedDB) でエラーが発生しました。データは保存できていない可能性が高いです。");
@@ -335,6 +344,25 @@ function calculateChanges(totalAmount: number): ([number, number] | null)[] {
       return [y, y - totalAmount];
     }
   });
+}
+
+class Timer extends React.Component<{ startTime: number | null }> {
+
+  componentDidMount() {
+    setInterval(() => {
+      this.forceUpdate();
+    })
+  }
+
+  render() {
+    if (!this.props.startTime) {
+      return "00:00";
+    }
+    const value = Math.floor((Date.now() - this.props.startTime) / 1000);
+    const minutes = Math.floor(value / 60).toString().padStart(2, "0");
+    const seconds = (value % 60).toString().padStart(2, "0");
+    return `${ minutes }:${ seconds }`;
+  }
 }
 
 const LargeButton = (props: ButtonProps) => (
