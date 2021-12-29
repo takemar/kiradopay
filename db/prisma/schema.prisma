@@ -21,7 +21,7 @@ model Event {
 
 model Item {
   id           Int                   @id @default(autoincrement())
-  code         String                @unique
+  code         String
   name         String
   img          String?
   event        Event                 @relation(fields: [eventId], references: [id])
