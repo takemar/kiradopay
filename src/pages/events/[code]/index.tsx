@@ -187,7 +187,7 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
       .map(([itemId, number]) => ({ itemId, number }))
       .filter(({ number }) => number !== 0)
     );
-    this.application.register(items).then(() => {
+    this.application.register({ items, totalAmount: this.totalAmount() }).then(() => {
       this.setState({
         numbers: new Map(this.props.event.items.map(item => [item.id, 0]))
       });

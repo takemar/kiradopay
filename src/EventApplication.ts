@@ -84,13 +84,16 @@ class EventApplication extends EventTarget implements TypedEventTarget<Applicati
     this.dbState = "opening";
   }
 
-  async register(items: { itemId: number, number: number }[]) {
+  async register(
+    {items, totalAmount}: { items: { itemId: number, number: number }[], totalAmount: number}
+  ) {
     if (items.length === 0) {
       return;
     }
     const salesRecord = {
       code: randomUUID(),
       timestamp: new Date(),
+      totalAmount,
       eventId: this.eventId,
       items,
     };
