@@ -2,7 +2,7 @@ import React from "react";
 import { GetServerSideProps } from "next";
 import { PrismaClient } from "@prisma/client";
 import type { Event as EventObject, Item } from "@prisma/client";
-import { Box, Card, CardContent, CardMedia, CircularProgress, Container, Grid, LinearProgress, MenuItem, Paper, Typography } from "@mui/material";
+import { Box, BoxProps, Card, CardContent, CardMedia, CircularProgress, Container, Grid, LinearProgress, MenuItem, Paper, Typography } from "@mui/material";
 import Button, { ButtonProps } from "@mui/material/Button"
 import {
   Cancel as CancelIcon,
@@ -12,6 +12,7 @@ import {
   CloudUpload as CloudUploadIcon,
   HourglassBottom as HourglassBottomIcon,
 } from "@mui/icons-material";
+import chunk from "lodash.chunk";
 import EventApplication, { DBState, WsState } from "../../../EventApplication";
 import AppIDB from "../../../AppIDB";
 import { ClientInfo, ClientName } from "../../../client-info";
@@ -149,26 +150,20 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
           <Container>
             <Box sx={{ display: "flex", alignItems: "center" }}>
               <Status value={ this.state.status } />
-              <Typography sx={{
-                flex: "auto",
-                fontSize: "2em",
-                fontWeight: "bold",
-                textAlign: "right",
-                px: 2
-              }}>
-                &yen; { this.totalAmount().toLocaleString("ja-JP") }
-              </Typography>
-              <LargeButton
-                variant="contained"
-                disabled={
-                  ["dbInitializing", "dbBlocked", "registering", "error"].includes(this.state.status)
-                  || Array.from(this.state.numbers).map(([_, number]) => number).every(x => x === 0)
-                }
-                onClick={ this.registerButtonClicked }
-                sx={{ px: 4 }}
-              >
-                登録
-              </LargeButton>
+              <PriceComponent totalAmount={ this.totalAmount() } sx={{ flex: "auto", px: 2 }} />
+              <Box sx={{ flex: "none", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <LargeButton
+                  variant="contained"
+                  disabled={
+                    ["dbInitializing", "dbBlocked", "registering", "error"].includes(this.state.status)
+                    || Array.from(this.state.numbers).map(([_, number]) => number).every(x => x === 0)
+                  }
+                  onClick={ this.registerButtonClicked }
+                  sx={{ px: 4 }}
+                >
+                  登録
+                </LargeButton>
+              </Box>
             </Box>
           </Container>
         </Paper>
@@ -283,6 +278,60 @@ const Status: React.FC<{ value: StatusType }> = ({ value }) => {
       return <CancelIcon />;
   }
 };
+
+const PriceComponent: React.FC<{ totalAmount: number } & BoxProps> = ({ totalAmount, sx, ...props }) => (
+  <Box { ...props } sx={{ display: "flex", flexDirection: "column", ...sx }}>
+    <Typography sx={{
+      fontSize: "2em",
+      fontWeight: "bold",
+      textAlign: "right",
+    }}>
+      ¥ { totalAmount.toLocaleString("ja-JP") }
+    </Typography>
+    <Box sx={{ fontSize: "0.75em", textAlign: "right" }}>
+      {
+        chunk(calculateChanges(totalAmount), 2).map(a => (
+          <Box sx={{ display: "inline-block" }}>
+            {
+              a!.map((v, i) => (
+                <Box key={i} sx={{
+                  display: "inline-block",
+                  width: "8em",
+                  height: "1.125em",
+                  mx: 1,
+                }}>
+                  <Box component="span" sx={{ display: "inline-block", width: "3.5em", textAlign: "right" }}>
+                    { v != null &&  `¥ ${ v[0].toLocaleString("ja-JP") }`}
+                  </Box>
+                  <Box component="span" sx={{ display: "inline-block", width: "1em", textAlign: "center" }}>
+                    { v != null && "→"}
+                  </Box>
+                  <Box component="span" sx={{ display: "inline-block", width: "3.5em", textAlign: "right" }}>
+                    { v != null &&  `¥ ${ v[1].toLocaleString("ja-JP") }`}
+                  </Box>
+                </Box>
+              ))
+            }
+          </Box>
+        ))
+      }
+    </Box>
+  </Box>
+);
+
+function calculateChanges(totalAmount: number): ([number, number] | null)[] {
+  if (totalAmount === 0) {
+    return [null, null, null, null];
+  }
+  return [500, 1000, 5000, 10000].map((x, i, a) => {
+    const y = Math.ceil(totalAmount / x) * x;
+    if (a[i + 1] && y % a[i + 1] === 0) {
+      return null;
+    } else {
+      return [y, y - totalAmount];
+    }
+  });
+}
 
 const LargeButton = (props: ButtonProps) => (
   <Button
