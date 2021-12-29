@@ -108,7 +108,7 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
       })
     });
     this.application.addEventListener("dberror", () => {
-      // TODO
+      window.alert("ブラウザのデータベース (IndexedDB) でエラーが発生しました。");
     });
     this.calculator = calculator({ event: props.event, items: props.event.items });
   }
@@ -192,7 +192,7 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
         numbers: new Map(this.props.event.items.map(item => [item.id, 0]))
       });
     }).catch(() => {
-      // TODO
+      window.alert("ブラウザのデータベース (IndexedDB) でエラーが発生しました。データは保存できていない可能性が高いです。");
     });
   };
 };
@@ -290,11 +290,11 @@ const PriceComponent: React.FC<{ totalAmount: number } & BoxProps> = ({ totalAmo
     </Typography>
     <Box sx={{ fontSize: "0.75em", textAlign: "right" }}>
       {
-        chunk(calculateChanges(totalAmount), 2).map(a => (
-          <Box sx={{ display: "inline-block" }}>
+        chunk(calculateChanges(totalAmount), 2).map((a, i) => (
+          <Box key={i} sx={{ display: "inline-block" }}>
             {
-              a!.map((v, i) => (
-                <Box key={i} sx={{
+              a!.map((v, j) => (
+                <Box key={j} sx={{
                   display: "inline-block",
                   width: "8em",
                   height: "1.125em",
