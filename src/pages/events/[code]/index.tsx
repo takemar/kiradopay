@@ -131,6 +131,12 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
           <MenuItem component="a" href="/">
             トップ
           </MenuItem>
+          <MenuItem component="a" href="/profile">
+            名前の変更
+          </MenuItem>
+          <MenuItem component="a" href={ `/events/${ this.props.event.code }/dashboard` }>
+            このイベントのダッシュボード
+          </MenuItem>
         </Navigation>
         <Container sx={{ flex: "auto", overflowY: "auto" , py: 2 }}>
           <Grid container spacing={1} alignItems="stretch">

@@ -31,8 +31,8 @@ const TopPage: NextPage<TopPageProps> = ({ events }) => {
       </Head>
       <Navigation clientInfo={ clientInfo } title="Kiradopay">
         {/* FIXME: これは <ul><a></a></ul> を生産する。 */}
-        <MenuItem component="a" href="/">
-          トップ
+        <MenuItem component="a" href="/profile">
+          名前の変更
         </MenuItem>
       </Navigation>
       <Container sx={{

@@ -108,6 +108,9 @@ const Dashboard: React.FC<DashboardProps> = (props) => {
         <MenuItem component="a" href="/">
           トップ
         </MenuItem>
+        <MenuItem component="a" href="/profile">
+          名前の変更
+        </MenuItem>
         <MenuItem component="a" href={ `/events/${ props.event.code }` }>
           このイベントのレジ画面
         </MenuItem>
