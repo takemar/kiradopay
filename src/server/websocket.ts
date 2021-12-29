@@ -54,6 +54,7 @@ export default function webSocketServer(
 async function handleClientHello(data: WebSocketMessage.ClientHello, connectionInfo: ConnectionInfo) {
   connectionInfo.eventId = data.eventId;
   connectionInfo.clientId = data.clientId;
+  /*
   await prisma.event.update({
     where: {
       id: data.eventId
@@ -64,6 +65,7 @@ async function handleClientHello(data: WebSocketMessage.ClientHello, connectionI
       }
     }
   });
+  */
   return {};
 }
 
@@ -89,6 +91,7 @@ async function handleStoreRequest(data: WebSocketMessage.Store, connectionInfo: 
 }
 
 async function bye(wss: WebSocketServer,connection: WebSocketWithInfo) {
+  /*
   const info = connection.info;
   if (!(info && info.clientId && info.eventId)) {
     throw new Error;
@@ -113,4 +116,5 @@ async function bye(wss: WebSocketServer,connection: WebSocketWithInfo) {
       },
     },
   });
+  */
 }
