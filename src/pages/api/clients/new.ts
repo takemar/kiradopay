@@ -11,10 +11,10 @@ export default async function handler(
 ) {
   // HTTPの仕様上、GETメソッドとHEADメソッドは必須。
   if (req.method === "GET" || req.method === "HEAD") {
-    return res.status(400);
+    return res.status(400).end();
   }
   else if (req.method !== "POST"){
-    return res.status(405).setHeader("Allow", "GET, HEAD, POST");
+    return res.status(405).setHeader("Allow", "GET, HEAD, POST").end();
   }
 
   const prisma = new PrismaClient();

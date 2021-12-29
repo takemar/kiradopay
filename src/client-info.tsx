@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Client } from "@prisma/client";
 import AppIDB from "./AppIDB";
 
@@ -61,8 +61,13 @@ export class ClientInfo {
   }
 }
 
-export const ClientName: React.FC<{ info: ClientInfo }> = ({ info }) => (
-  <>
-    { info.getOrThrow().name }
-  </>
-);
+export const ClientName: React.FC<{ info: ClientInfo }> = ({ info }) => {
+  useEffect(() => {
+    info.initialize();
+  }, [info]);
+  return (
+    <>
+      { info.getOrThrow().name }
+    </>
+  );
+};

@@ -109,7 +109,6 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
   }
 
   componentDidMount() {
-    this.clientInfo.initialize();
     this.application.initialize();
   }
 
