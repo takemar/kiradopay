@@ -16,6 +16,8 @@ import {
 import EventApplication, { DBState, WsState } from "../../../EventApplication";
 import AppIDB from "../../../AppIDB";
 import { ClientInfo, ClientName } from "../../../client-info";
+import CalculatorInterface from "../../../CalculatorInterface";
+import calculator from "../../../calculator";
 
 type EventPageProps = {
   event: EventObject & { items: Item[] }
@@ -49,6 +51,7 @@ export const getServerSideProps: GetServerSideProps<EventPageProps> = async ({ p
 export default class EventPage extends React.Component<EventPageProps, EventPageState> {
 
   application: EventApplication;
+  calculator: CalculatorInterface;
   clientInfo: ClientInfo;
   idb: AppIDB;
 
@@ -106,6 +109,7 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
     this.application.addEventListener("dberror", () => {
       // TODO
     });
+    this.calculator = calculator({ event: props.event, items: props.event.items });
   }
 
   componentDidMount() {
@@ -184,11 +188,7 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
   }
 
   totalAmount(): number {
-    return (
-      this.props.event.items
-      .map(item => item.unitPrice * this.state.numbers.get(item.id)!)
-      .reduce((a, b) => a + b)
-    );
+    return this.calculator.exec(this.state.numbers);
   }
 
   numberChanged = (id: number, newValue: number) => {
