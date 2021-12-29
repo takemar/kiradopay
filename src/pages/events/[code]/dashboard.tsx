@@ -6,6 +6,7 @@ import { PrismaClient } from "@prisma/client";
 import type { Client, Event, Item, ItemsOnSalesRecords, SalesRecord } from "@prisma/client";
 import { WebSocketServer } from "ws";
 import { Box, Container, MenuItem } from "@mui/material";
+import sum from "lodash.sum";
 import type { WebSocketWithInfo } from "../../../server/websocket";
 import Navigation from "../../../Navigation";
 import AppIDB from "../../../AppIDB";
@@ -112,24 +113,24 @@ const Dashboard: React.FC<DashboardProps> = (props) => {
         </MenuItem>
       </Navigation>
       <Container sx={{ flex: "auto", overflowY: "auto" , py: 2 }}>
-      <h1>{ props.event.name }</h1>
-      <h2>接続中の端末</h2>
-      <ul>
-        {
-          props.onlineClients.map(client => (
-            <li key={ client.id }>{ client.name }</li>
-          ))
-        }
-      </ul>
-      <h2>接続が切断された端末</h2>
-      <ul>
-        {
-          props.offlineClients.map(client => (
-            <li key={ client.id }>{ client.name }</li>
-          ))
-        }
-      </ul>
-      <h2>売上記録</h2>
+        <div>
+          { `売上の合計金額：${ sum(props.salesRecords.map(s => s.totalAmount)).toLocaleString("ja-JP") }` }
+        </div>
+        <ul>
+          {
+            props.items.map(item => (
+              <li key={ item.id }>
+                { 
+                  `${
+                    item.name
+                  }の合計頒布数：${
+                    sum(props.salesRecords.map(s => s.items.find(i => i.itemId === item.id)?.number || 0))
+                  }`
+                }
+              </li>
+            ))
+          }
+        </ul>
       <table>
         <tr>
           <th>timestamp</th>
@@ -138,6 +139,7 @@ const Dashboard: React.FC<DashboardProps> = (props) => {
               <th key={ item.id }>{ item.name }</th>
             ))
           }
+          <th>金額</th>
           <th>端末</th>
         </tr>
         {
@@ -151,6 +153,7 @@ const Dashboard: React.FC<DashboardProps> = (props) => {
                   </td>
                 ))
               }
+              <td style={{ textAlign: "right" }}>{ salesRecord.totalAmount.toLocaleString("ja-JP") }</td>
               <td>{ salesRecord.client.name }</td>
             </tr>
           ))
