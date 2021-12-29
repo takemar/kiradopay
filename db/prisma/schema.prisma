@@ -32,13 +32,14 @@ model Item {
 }
 
 model SalesRecord {
-  code      String                @id
-  timestamp DateTime
-  event     Event                 @relation(fields: [eventId], references: [id])
-  eventId   Int                   @map("event_id")
-  items     ItemsOnSalesRecords[]
-  client    Client                @relation(fields: [clientId], references: [id])
-  clientId  Int                   @map("client_id")
+  code        String                @id
+  timestamp   DateTime
+  totalAmount Int                   @map("total_amount")
+  event       Event                 @relation(fields: [eventId], references: [id])
+  eventId     Int                   @map("event_id")
+  items       ItemsOnSalesRecords[]
+  client      Client                @relation(fields: [clientId], references: [id])
+  clientId    Int                   @map("client_id")
 
   @@map("sales_records")
 }
