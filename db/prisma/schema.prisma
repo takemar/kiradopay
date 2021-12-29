@@ -21,9 +21,9 @@ model Event {
 
 model Item {
   id           Int                   @id @default(autoincrement())
+  code         String                @unique
   name         String
   img          String?
-  unitPrice    Int
   event        Event                 @relation(fields: [eventId], references: [id])
   eventId      Int                   @map("event_id")
   salesRecords ItemsOnSalesRecords[]
