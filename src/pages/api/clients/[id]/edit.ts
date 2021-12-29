@@ -37,5 +37,5 @@ export default async function handler(
   if (!result) {
     return res.status(400).end();
   }
-  return res.status(303).setHeader("Location", "/").end();
+  return res.status(200).end();
 }
