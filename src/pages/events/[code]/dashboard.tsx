@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import Head from "next/head";
 import { GetServerSideProps } from "next";
 import getConfig from "next/config";
 import { PrismaClient } from "@prisma/client";
@@ -98,6 +99,9 @@ const Dashboard: React.FC<DashboardProps> = (props) => {
 
   return(
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <Head>
+        <title>{ `${ props.event.name } - Kiradopay` }</title>
+      </Head>
       <Navigation clientInfo={ clientInfo } title={ props.event.name }>
         {/* FIXME: これは <ul><a></a></ul> を生産する。 */}
         <MenuItem component="a" href="/">

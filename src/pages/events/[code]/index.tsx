@@ -1,5 +1,6 @@
 import React from "react";
 import { GetServerSideProps } from "next";
+import Head from "next/head";
 import { PrismaClient } from "@prisma/client";
 import type { Event as EventObject, Item } from "@prisma/client";
 import { Box, BoxProps, Card, CardContent, CardMedia, CircularProgress, Container, Grid, LinearProgress, MenuItem, Paper, Typography } from "@mui/material";
@@ -120,6 +121,9 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
   render() {
     return (
       <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
+        <Head>
+          <title>{ `${ this.props.event.name } - Kiradopay` }</title>
+        </Head>
         <Navigation clientInfo={ this.clientInfo } title={ this.props.event.name }>
           {/* FIXME: これは <ul><a></a></ul> を生産する。 */}
           <MenuItem component="a" href="/">

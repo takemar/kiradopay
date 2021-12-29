@@ -24,7 +24,7 @@ export default class ProfilePage extends React.Component {
     return(
       <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
         <Head>
-          <title>Kiradopay</title>
+          <title>Kiradopay - 名前の変更</title>
         </Head>
         <AppBar position="static">
           <Toolbar variant="dense">

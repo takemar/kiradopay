@@ -27,7 +27,7 @@ const TopPage: NextPage<TopPageProps> = ({ events }) => {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <Head>
-        <title>Kiradopay</title>
+        <title>Kiradopay - トップ</title>
       </Head>
       <Navigation clientInfo={ clientInfo } title="Kiradopay">
         {/* FIXME: これは <ul><a></a></ul> を生産する。 */}
