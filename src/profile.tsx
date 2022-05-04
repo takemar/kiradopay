@@ -1,8 +1,8 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Client } from "@prisma/client";
 import AppIDB from "./AppIDB";
 
-export class ClientInfo {
+export class ProfileLoader {
 
   private data?: Client;
   private idb: AppIDB;
@@ -28,7 +28,7 @@ export class ClientInfo {
     this.rejectionFunc!(reason);
   }
 
-  // ブラウザのみで実行されるcomponentDidMountから呼ぶ。
+  // ブラウザのみで実行されるcomponentDidMount/useEffectで呼ぶ。
   async initialize() {
     if (this.initialized) {
       return;
@@ -41,11 +41,11 @@ export class ClientInfo {
     }
     const response = await fetch("/api/clients/new", { method: "POST" });
     if (!response.ok) {
-      this.reject!(await response.json());
+      this.reject(await response.json());
     }
     const fetchedData = await response.json();
     await (await this.idb).put("info", fetchedData, "client");
-    this.resolve(await fetchedData as Client);
+    this.resolve(fetchedData as Client);
   }
 
   getOrThrow(): Client {
@@ -61,13 +61,20 @@ export class ClientInfo {
   }
 }
 
-export const ClientName: React.FC<{ info: ClientInfo }> = ({ info }) => {
+export const ProfileContext = React.createContext<ProfileLoader>(new ProfileLoader({ idb: new AppIDB() }));
+
+export const useProfile = () => {
+  const [loader, _] = useState(() => new ProfileLoader({ idb: new AppIDB() }));
   useEffect(() => {
-    info.initialize();
-  }, [info]);
+    loader.initialize();
+  }, [loader]);
+  return loader;
+};
+
+export const ClientName: React.FC = () => {
   return (
-    <>
-      { info.getOrThrow().name }
-    </>
+    <ProfileContext.Consumer>
+      { profile => profile.getOrThrow().name }
+    </ProfileContext.Consumer>
   );
 };

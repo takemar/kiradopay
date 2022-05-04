@@ -1,15 +1,16 @@
 import React, { Suspense, useEffect, useState } from "react";
 import Head from "next/head";
-import { AppBar, Box, Button, CircularProgress, Container, IconButton, NoSsr, TextField, Toolbar, Typography } from "@mui/material";
+import { AppBar, Box, Button, CircularProgress, Container, IconButton, MenuItem, NoSsr, TextField, Toolbar, Typography } from "@mui/material";
 import { AccountCircle as AccountCircleIcon } from "@mui/icons-material";
 import AppIDB from "../AppIDB";
-import { ClientInfo, ClientName } from "../client-info";
+import { ProfileContext, ProfileLoader } from "../profile";
 import styles from "../styles/profile.module.css";
+import Navigation from "../Navigation";
 
 export default class ProfilePage extends React.Component<{}, { submit: boolean }> {
 
-  clientInfo: ClientInfo;
   idb: AppIDB;
+  profile: ProfileLoader;
   textField: React.RefObject<HTMLInputElement>;
 
   constructor(props: {}) {
@@ -20,12 +21,12 @@ export default class ProfilePage extends React.Component<{}, { submit: boolean }
     }
 
     this.idb = new AppIDB();
-    this.clientInfo = new ClientInfo({ idb: this.idb });
+    this.profile = new ProfileLoader({ idb: this.idb });
     this.textField = React.createRef();
   }
 
   componentDidMount() {
-    this.clientInfo.initialize();
+    this.profile.initialize();
   }
 
   render() {
@@ -34,21 +35,14 @@ export default class ProfilePage extends React.Component<{}, { submit: boolean }
         <Head>
           <title>Kiradopay - 名前の変更</title>
         </Head>
-        <AppBar position="static">
-          <Toolbar variant="dense">
-            <Box component="h1" sx={{ flexGrow: 1 }} />
-            <NoSsr>
-              <Suspense fallback={ null }>
-                <Typography>
-                  <ClientName info={ this.clientInfo } />
-                </Typography>
-              </Suspense>
-            </NoSsr>
-            <IconButton color="inherit">
-              <AccountCircleIcon />
-            </IconButton>
-          </Toolbar>
-        </AppBar>
+        <ProfileContext.Provider value={ this.profile }>
+          <Navigation title="Kiradopay">
+            {/* FIXME: これは <ul><a></a></ul> を生産する。 */}
+            <MenuItem component="a" href="/">
+              トップ
+            </MenuItem>
+          </Navigation>
+        </ProfileContext.Provider>
         <Container sx={{ flex: "auto", overflowY: "auto" , py: 2 }}>
           <Typography component="h2" sx={{ fontWeight: "bold", fontSize: "1.5em", my: 2 }}>名前の変更</Typography>
           <Box sx={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
@@ -76,7 +70,7 @@ export default class ProfilePage extends React.Component<{}, { submit: boolean }
       submit: true,
     });
     try {
-      const id = (await this.clientInfo.getAsync()).id;
+      const id = (await this.profile.getAsync()).id;
       const name = this.textField.current!.value;
       const response = await fetch(`/api/clients/${ id }/edit`, {
         method: "POST",
@@ -88,7 +82,7 @@ export default class ProfilePage extends React.Component<{}, { submit: boolean }
       if (!response.ok) {
         throw new Error;
       }
-      (await this.idb).put("info", { id, name }, "client");
+      (await this.idb.open()).put("info", { id, name }, "client");
       window.location.href = "/";
     } catch {
       window.alert("エラー発生");

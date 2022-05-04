@@ -1,14 +1,13 @@
 import React, { Suspense, useRef, useState } from "react";
 import { AppBar, AppBarProps, Button, Menu, NoSsr, Toolbar, Typography } from "@mui/material";
 import { Settings as SettingsIcon } from "@mui/icons-material";
-import { ClientInfo, ClientName } from "./client-info"
+import { ClientName } from "./profile"
 
 type NavigationProps = {
-  clientInfo: ClientInfo,
   title?: string,
 } & AppBarProps;
 
-const Navigation: React.FC<NavigationProps> = ({ children, clientInfo, title, ...props }) => {
+const Navigation: React.FC<NavigationProps> = ({ children, title, ...props }) => {
   const [open, setOpen] = useState<boolean>(false);
   const anchorEl = useRef(null);
 
@@ -26,7 +25,7 @@ const Navigation: React.FC<NavigationProps> = ({ children, clientInfo, title, ..
         >
           <NoSsr>
             <Suspense fallback={ null }>
-              <ClientName info={ clientInfo } />
+              <ClientName />
             </Suspense>
           </NoSsr>
         </Button>

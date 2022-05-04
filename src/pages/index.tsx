@@ -5,8 +5,7 @@ import { PrismaClient } from "@prisma/client";
 import type { Event as EventObject } from "@prisma/client";
 import { Box, Button, Container, MenuItem } from '@mui/material';
 import Navigation from '../Navigation';
-import AppIDB from '../AppIDB';
-import { ClientInfo } from '../client-info';
+import { ProfileContext, useProfile } from '../profile';
 
 type TopPageProps = { events: EventObject[] };
 
@@ -19,22 +18,21 @@ export const getServerSideProps: GetServerSideProps<TopPageProps> = async ({ par
 );
 
 const TopPage: NextPage<TopPageProps> = ({ events }) => {
-  const [clientInfo, _] = useState(new ClientInfo({ idb: new AppIDB() }));
-  useEffect(() => {
-    clientInfo.initialize();
-  }, [clientInfo]);
+  const profile = useProfile();
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <Head>
         <title>Kiradopay - トップ</title>
       </Head>
-      <Navigation clientInfo={ clientInfo } title="Kiradopay">
-        {/* FIXME: これは <ul><a></a></ul> を生産する。 */}
-        <MenuItem component="a" href="/profile">
-          名前の変更
-        </MenuItem>
-      </Navigation>
+      <ProfileContext.Provider value={ profile }>
+        <Navigation title="Kiradopay">
+          {/* FIXME: これは <ul><a></a></ul> を生産する。 */}
+          <MenuItem component="a" href="/profile">
+            名前の変更
+          </MenuItem>
+        </Navigation>
+      </ProfileContext.Provider>
       <Container sx={{
         display: "flex",
         flexDirection: "column",

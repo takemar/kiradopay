@@ -9,8 +9,7 @@ import { Box, Container, MenuItem } from "@mui/material";
 import sum from "lodash.sum";
 import type { WebSocketWithInfo } from "../../../server/websocket";
 import Navigation from "../../../Navigation";
-import AppIDB from "../../../AppIDB";
-import { ClientInfo } from "../../../client-info";
+import { ProfileContext, useProfile } from "../../../profile";
 
 type DashboardProps = {
   event: Event,
@@ -93,28 +92,27 @@ export const getServerSideProps: GetServerSideProps<DashboardProps> = async ({ p
 };
 
 const Dashboard: React.FC<DashboardProps> = (props) => {
-  const [clientInfo, _] = useState(new ClientInfo({ idb: new AppIDB() }));
-  useEffect(() => {
-    clientInfo.initialize();
-  }, [clientInfo]);
+  const profile = useProfile();
 
   return(
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <Head>
         <title>{ `${ props.event.name } - Kiradopay` }</title>
       </Head>
-      <Navigation clientInfo={ clientInfo } title={ props.event.name }>
-        {/* FIXME: これは <ul><a></a></ul> を生産する。 */}
-        <MenuItem component="a" href="/">
-          トップ
-        </MenuItem>
-        <MenuItem component="a" href="/profile">
-          名前の変更
-        </MenuItem>
-        <MenuItem component="a" href={ `/events/${ props.event.code }` }>
-          このイベントのレジ画面
-        </MenuItem>
-      </Navigation>
+      <ProfileContext.Provider value={ profile }>
+        <Navigation title={ props.event.name }>
+          {/* FIXME: これは <ul><a></a></ul> を生産する。 */}
+          <MenuItem component="a" href="/">
+            トップ
+          </MenuItem>
+          <MenuItem component="a" href="/profile">
+            名前の変更
+          </MenuItem>
+          <MenuItem component="a" href={ `/events/${ props.event.code }` }>
+            このイベントのレジ画面
+          </MenuItem>
+        </Navigation>
+      </ProfileContext.Provider>
       <Container sx={{ flex: "auto", overflowY: "auto" , py: 2 }}>
         <div>
           { `売上の合計金額：${ sum(props.salesRecords.map(s => s.totalAmount)).toLocaleString("ja-JP") }` }

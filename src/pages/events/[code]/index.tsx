@@ -16,10 +16,10 @@ import {
 import chunk from "lodash.chunk";
 import EventApplication, { DBState, WsState } from "../../../EventApplication";
 import AppIDB from "../../../AppIDB";
-import { ClientInfo, ClientName } from "../../../client-info";
 import CalculatorInterface from "../../../CalculatorInterface";
 import calculator from "../../../calculator";
 import Navigation from "../../../Navigation";
+import { ProfileContext, ProfileLoader } from "../../../profile";
 
 type EventPageProps = {
   event: EventObject & { items: Item[] }
@@ -55,8 +55,8 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
 
   application: EventApplication;
   calculator: CalculatorInterface;
-  clientInfo: ClientInfo;
   idb: AppIDB;
+  profile: ProfileLoader;
 
   static status(dbState: DBState, wsState: WsState): StatusType {
     switch (dbState) {
@@ -96,11 +96,11 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
     };
 
     this.idb = new AppIDB();
-    this.clientInfo = new ClientInfo({ idb: this.idb });
+    this.profile = new ProfileLoader({ idb: this.idb });
     this.application = new EventApplication({
       eventId: this.props.event.id,
       idb: this.idb,
-      clientInfo: this.clientInfo,
+      profile: this.profile,
     });
     this.application.addEventListener("statechange", () => {
       this.setState({
@@ -117,6 +117,7 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
   }
 
   componentDidMount() {
+    this.profile.initialize();
     this.application.initialize();
   }
 
@@ -126,18 +127,20 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
         <Head>
           <title>{ `${ this.props.event.name } - Kiradopay` }</title>
         </Head>
-        <Navigation clientInfo={ this.clientInfo } title={ this.props.event.name }>
-          {/* FIXME: これは <ul><a></a></ul> を生産する。 */}
-          <MenuItem component="a" href="/">
-            トップ
-          </MenuItem>
-          <MenuItem component="a" href="/profile">
-            名前の変更
-          </MenuItem>
-          <MenuItem component="a" href={ `/events/${ this.props.event.code }/dashboard` }>
-            このイベントのダッシュボード
-          </MenuItem>
-        </Navigation>
+        <ProfileContext.Provider value={ this.profile }>
+          <Navigation title={ this.props.event.name }>
+            {/* FIXME: これは <ul><a></a></ul> を生産する。 */}
+            <MenuItem component="a" href="/">
+              トップ
+            </MenuItem>
+            <MenuItem component="a" href="/profile">
+              名前の変更
+            </MenuItem>
+            <MenuItem component="a" href={ `/events/${ this.props.event.code }/dashboard` }>
+              このイベントのダッシュボード
+            </MenuItem>
+          </Navigation>
+        </ProfileContext.Provider>
         <Container sx={{ flex: "auto", overflowY: "auto" , py: 2 }}>
           <Grid container spacing={1} alignItems="stretch">
             {
