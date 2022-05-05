@@ -2,7 +2,7 @@ import React from "react";
 import { Box, Button, CircularProgress, TextField, Typography } from "@mui/material";
 import AppIDB from "../AppIDB";
 import { ProfileLoader } from "../profile";
-import styles from "../styles/profile.module.css";
+import styles from "../styles/form.module.css";
 import Layout from "../components/Layout";
 
 export default class ProfilePage extends React.Component<{}, { submit: boolean }> {

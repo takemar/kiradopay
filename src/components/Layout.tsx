@@ -8,7 +8,7 @@ type LayoutProps = {
   headTitle: string,
   bodyTitle: string,
   menuItems: MenuItems,
-  profile: ProfileLoader,
+  profile?: ProfileLoader,
   containerProps?: Omit<ContainerProps, "children">,
   bottom?: React.ReactNode,
 };
