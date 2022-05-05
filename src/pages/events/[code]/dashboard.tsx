@@ -1,15 +1,13 @@
-import React, { useEffect, useState } from "react";
-import Head from "next/head";
+import React from "react";
 import { GetServerSideProps } from "next";
 import getConfig from "next/config";
 import { PrismaClient } from "@prisma/client";
 import type { Client, Event, Item, ItemsOnSalesRecords, SalesRecord } from "@prisma/client";
 import { WebSocketServer } from "ws";
-import { Box, Container, MenuItem } from "@mui/material";
 import sum from "lodash.sum";
+import Layout from "../../../components/Layout";
 import type { WebSocketWithInfo } from "../../../server/websocket";
-import Navigation from "../../../Navigation";
-import { ProfileContext, useProfile } from "../../../profile";
+import { useProfile } from "../../../profile";
 
 type DashboardProps = {
   event: Event,
@@ -95,43 +93,34 @@ const Dashboard: React.FC<DashboardProps> = (props) => {
   const profile = useProfile();
 
   return(
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <Head>
-        <title>{ `${ props.event.name } - Kiradopay` }</title>
-      </Head>
-      <ProfileContext.Provider value={ profile }>
-        <Navigation title={ props.event.name }>
-          {/* FIXME: これは <ul><a></a></ul> を生産する。 */}
-          <MenuItem component="a" href="/">
-            トップ
-          </MenuItem>
-          <MenuItem component="a" href="/profile">
-            名前の変更
-          </MenuItem>
-          <MenuItem component="a" href={ `/events/${ props.event.code }` }>
-            このイベントのレジ画面
-          </MenuItem>
-        </Navigation>
-      </ProfileContext.Provider>
-      <Container sx={{ flex: "auto", overflowY: "auto" , py: 2 }}>
-        <div>
-          { `売上の合計金額：${ sum(props.salesRecords.map(s => s.totalAmount)).toLocaleString("ja-JP") }` }
-        </div>
-        <ul>
-          {
-            props.items.map(item => (
-              <li key={ item.id }>
-                { 
-                  `${
-                    item.name
-                  }の合計頒布数：${
-                    sum(props.salesRecords.map(s => s.items.find(i => i.itemId === item.id)?.number || 0))
-                  }`
-                }
-              </li>
-            ))
-          }
-        </ul>
+    <Layout
+      headTitle={ `${ props.event.name } - Kiradopay` }
+      bodyTitle={ props.event.name }
+      menuItems={[
+        { href: "/", textContent: "トップ" },
+        { href: "/profile", textContent: "名前の変更" },
+        { href: `/events/${ props.event.code }`, textContent: "このイベントのレジ画面" },
+      ]}
+      profile={ profile }
+    >
+      <div>
+        { `売上の合計金額：${ sum(props.salesRecords.map(s => s.totalAmount)).toLocaleString("ja-JP") }` }
+      </div>
+      <ul>
+        {
+          props.items.map(item => (
+            <li key={ item.id }>
+              {
+                `${
+                  item.name
+                }の合計頒布数：${
+                  sum(props.salesRecords.map(s => s.items.find(i => i.itemId === item.id)?.number || 0))
+                }`
+              }
+            </li>
+          ))
+        }
+      </ul>
       <table>
         <tr>
           <th>timestamp</th>
@@ -160,8 +149,7 @@ const Dashboard: React.FC<DashboardProps> = (props) => {
           ))
         }
       </table>
-      </Container>
-    </Box>
+    </Layout>
   );
 }
 

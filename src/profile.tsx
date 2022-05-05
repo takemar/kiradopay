@@ -61,8 +61,6 @@ export class ProfileLoader {
   }
 }
 
-export const ProfileContext = React.createContext<ProfileLoader>(new ProfileLoader({ idb: new AppIDB() }));
-
 export const useProfile = () => {
   const [loader, _] = useState(() => new ProfileLoader({ idb: new AppIDB() }));
   useEffect(() => {
@@ -71,10 +69,10 @@ export const useProfile = () => {
   return loader;
 };
 
-export const ClientName: React.FC = () => {
+export const ClientName: React.FC<{ profile: ProfileLoader }> = ({ profile }) => {
   return (
-    <ProfileContext.Consumer>
-      { profile => profile.getOrThrow().name }
-    </ProfileContext.Consumer>
+    <>
+      { profile.getOrThrow().name }
+    </>
   );
 };

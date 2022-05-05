@@ -1,9 +1,8 @@
 import React from "react";
 import { GetServerSideProps } from "next";
-import Head from "next/head";
 import { PrismaClient } from "@prisma/client";
 import type { Event as EventObject, Item } from "@prisma/client";
-import { Box, BoxProps, Card, CardContent, CardMedia, CircularProgress, Container, Grid, LinearProgress, MenuItem, Paper, Typography } from "@mui/material";
+import { Box, BoxProps, Card, CardContent, CardMedia, CircularProgress, Container, Grid, LinearProgress, Paper, Typography } from "@mui/material";
 import Button, { ButtonProps } from "@mui/material/Button"
 import {
   Cancel as CancelIcon,
@@ -14,12 +13,12 @@ import {
   HourglassBottom as HourglassBottomIcon,
 } from "@mui/icons-material";
 import chunk from "lodash.chunk";
+import Layout from "../../../components/Layout";
 import EventApplication, { DBState, WsState } from "../../../EventApplication";
 import AppIDB from "../../../AppIDB";
 import CalculatorInterface from "../../../CalculatorInterface";
 import calculator from "../../../calculator";
-import Navigation from "../../../Navigation";
-import { ProfileContext, ProfileLoader } from "../../../profile";
+import { ProfileLoader } from "../../../profile";
 
 type EventPageProps = {
   event: EventObject & { items: Item[] }
@@ -122,40 +121,23 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
   }
 
   render() {
-    return (
-      <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
-        <Head>
-          <title>{ `${ this.props.event.name } - Kiradopay` }</title>
-        </Head>
-        <ProfileContext.Provider value={ this.profile }>
-          <Navigation title={ this.props.event.name }>
-            {/* FIXME: これは <ul><a></a></ul> を生産する。 */}
-            <MenuItem component="a" href="/">
-              トップ
-            </MenuItem>
-            <MenuItem component="a" href="/profile">
-              名前の変更
-            </MenuItem>
-            <MenuItem component="a" href={ `/events/${ this.props.event.code }/dashboard` }>
-              このイベントのダッシュボード
-            </MenuItem>
-          </Navigation>
-        </ProfileContext.Provider>
-        <Container sx={{ flex: "auto", overflowY: "auto" , py: 2 }}>
-          <Grid container spacing={1} alignItems="stretch">
-            {
-              this.props.event.items.map(item => (
-                <Grid item key={ item.id } xs={12} md={6} lg={4} xl={3}>
-                  <ItemComponent
-                    item={ item }
-                    number={ this.state.numbers.get(item.id)! }
-                    onNumberChange={ newValue => this.numberChanged(item.id, newValue) }
-                  />
-                </Grid>
-              ))
-            }
-          </Grid>
-        </Container>
+    const main = (
+      <Grid container spacing={1} alignItems="stretch">
+        {
+          this.props.event.items.map(item => (
+            <Grid item key={ item.id } xs={12} md={6} lg={4} xl={3}>
+              <ItemComponent
+                item={ item }
+                number={ this.state.numbers.get(item.id)! }
+                onNumberChange={ newValue => this.numberChanged(item.id, newValue) }
+              />
+            </Grid>
+          ))
+        }
+      </Grid>
+    );
+    const bottom = (
+      <>
         {
           this.state.status === "dbInitializing" || this.state.status === "dbBlocked"
           ? <LinearProgress />
@@ -185,7 +167,22 @@ export default class EventPage extends React.Component<EventPageProps, EventPage
             </Box>
           </Container>
         </Paper>
-      </Box>
+      </>
+    );
+    return (
+      <Layout
+        headTitle={ `${ this.props.event.name } - Kiradopay` }
+        bodyTitle={ this.props.event.name }
+        menuItems={[
+          { href: "/", textContent: "トップ" },
+          { href: "/profile", textContent: "名前の変更" },
+          { href: `/events/${ this.props.event.code }/dashboard`, textContent: "このイベントのダッシュボード" },
+        ]}
+        profile={ this.profile }
+        bottom={ bottom }
+      >
+        { main }
+      </Layout>
     );
   }
 
