@@ -1,14 +1,20 @@
 import React, { Suspense, useRef, useState } from "react";
-import { AppBar, AppBarProps, Button, Menu, NoSsr, Toolbar, Typography } from "@mui/material";
+import { AppBar, AppBarProps, Button, Menu, MenuItem, NoSsr, Toolbar, Typography } from "@mui/material";
 import { Settings as SettingsIcon } from "@mui/icons-material";
 import { ClientName, ProfileLoader } from "../profile";
 
 type NavigationProps = {
   title?: string,
   profile?: ProfileLoader,
+  menuItems: MenuItems,
 } & AppBarProps;
 
-const Navigation: React.FC<NavigationProps> = ({ children, title, profile, ...props }) => {
+export type MenuItems = {
+  href: string,
+  textContent: string,
+}[];
+
+const Navigation: React.FC<NavigationProps> = ({ children, title, profile, menuItems, ...props }) => {
   const [open, setOpen] = useState<boolean>(false);
   const anchorEl = useRef(null);
 
@@ -41,7 +47,14 @@ const Navigation: React.FC<NavigationProps> = ({ children, title, profile, ...pr
           anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
           transformOrigin={{ vertical: "top", horizontal: "right" }}
         >
-          { children }
+          {
+            /* FIXME: これは <ul><a></a></ul> を生産する。 */
+            menuItems.map(({ href, textContent }, i) => (
+              <MenuItem component="a" href={ href } key={ i }>
+                { textContent }
+              </MenuItem>
+            ))
+          }
         </Menu>
       </Toolbar>
     </AppBar>
