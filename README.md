@@ -22,6 +22,8 @@ $ yarn prisma migrate deploy
 
 で `db/db.sqlite3` が生えます．
 
+SQLiteに特有の機能は使っていないので， `db/prisma/schema.prisma` のdatasourceブロックを書き換えれば他のデータベースでもいける可能性がありますが，試していません．
+
 GUIでイベント（レジ画面1個に対応するオブジェクト）を追加する機能がまだないので， `$ sqlite3 db/db.sqlite3` コマンドでデータベースに入って直接追加します． `events` テーブルと `items` テーブルにレコードを投入してください．テーブル定義は `db/prisima/schema.prisma` ファイルを見るかSQLiteの `.schema` コマンドを打って確認してください．
 
 ### 3. 不足ファイルの追加
