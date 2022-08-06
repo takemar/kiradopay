@@ -32,7 +32,7 @@ GUIでイベント（レジ画面1個に対応するオブジェクト）を追�
 
 まず， `src/names.json` は，各クライアントに割り当てられる名前のリストです．ライセンスの都合（婉曲表現）でリポジトリに含まれていません．型が `string[]` であるようなJSONファイルであればなんでもよいので，適当に用意して配置します．
 
-次に， `src/calculator.ts` は，頒布価格を定義するファイルです．WebAssemblyを用いて（曲がりなりにも）GUIから設定できるようにする計画がありますが，まだないので，ソースコードに直接記述するようになっています． `src/CalculatorInterface.ts` に定義されている `CalculatorFactory` インタフェースを実装した関数を `calculator` という名前でexportしてください．
+次に， `src/calculator.ts` は，頒布価格を定義するファイルです．WebAssemblyを用いて（曲がりなりにも）GUIから設定できるようにする計画がありますが，まだないので，ソースコードに直接記述するようになっています． `src/CalculatorInterface.ts` に定義されている `CalculatorFactory` インタフェースを実装した関数をdefault exportしてください．
 
 ### 4. Next.js関係
 
