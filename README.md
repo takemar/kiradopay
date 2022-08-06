@@ -1,34 +1,61 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Kiradopay
 
-## Getting Started
+## デプロイ方法
 
-First, run the development server:
+### 1. Node.js関係
 
-```bash
-npm run dev
-# or
-yarn dev
+Node.jsをNVMなどの好みの方法でインストールし，yarnのインストール（普通は `$ npm install -g yarn` ）もしたら、普通に
+
+```
+$ yarn install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+でOKです．
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+### 2. データベース関係
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+パッケージマネージャを使うなどしてSQLite3をインストールしておきます．
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+```
+$ yarn prisma migrate deploy
+```
 
-## Learn More
+で `db/db.sqlite3` が生えます．
 
-To learn more about Next.js, take a look at the following resources:
+GUIでイベント（レジ画面1個に対応するオブジェクト）を追加する機能がまだないので， `$ sqlite3 db/db.sqlite3` コマンドでデータベースに入って直接追加します． `events` テーブルと `items` テーブルにレコードを投入してください．テーブル定義は `db/prisima/schema.prisma` ファイルを見るかSQLiteの `.schema` コマンドを打って確認してください．
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 3. 不足ファイルの追加
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+必要であるがリポジトリに含まれていないファイルがあるため，手動で追加します．
 
-## Deploy on Vercel
+まず， `src/names.json` は，各クライアントに割り当てられる名前のリストです．ライセンスの都合（婉曲表現）でリポジトリに含まれていません．型が `string[]` であるようなJSONファイルであればなんでもよいので，適当に用意して配置します．
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+次に， `src/calculator.ts` は，頒布価格を定義するファイルです．WebAssemblyを用いて（曲がりなりにも）GUIから設定できるようにする計画がありますが，まだないので，ソースコードに直接記述するようになっています． `src/CalculatorInterface.ts` に定義されている `CalculatorFactory` インタフェースを実装した関数を `calculator` という名前でexportしてください．
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+### 4. Next.js関係
+
+あとは普通にやるだけです．
+
+```
+$ yarn build
+```
+
+でビルドができます．
+
+```
+$ yarn start
+```
+
+でサーバが走ります．ポートはデフォルトでは3000番です． `PORT` 環境変数で変えられます．必要に応じて `.env.local` で定義してください．あとはnginxなりApacheからリバースプロキシしてやると良いでしょう．
+
+### 5. その他
+
+注意点として，ブラウザ側ではIndexedDBにセッションを保存しています．現状，データベースとブラウザのセッションに不整合がある場合にバグるという問題があるので，データベースを吹き飛ばした場合はホスト名を変えるかIndexedDBを吹き飛ばすかする必要があります．
+
+それから，デバッグでは `$ yarn build` と `$ yarn start` の代わりに
+
+```
+$ yarn dev
+```
+
+とできます．最適化が外れる代わりにhot reloadが有効になるとかな感じです．
