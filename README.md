@@ -1,10 +1,12 @@
 # Kiradopay
 
+参照： https://blog.takemaro.com/posts/2021/12/28-kiradopay
+
 ## デプロイ方法
 
 ### 1. Node.js関係
 
-Node.jsをNVMなどの好みの方法でインストールし，yarnのインストール（普通は `$ npm install -g yarn` ）もしたら、普通に
+Node.jsをNVMなどの好みの方法でインストールし，yarnのインストール（普通は `$ npm install -g yarn` ）もしたら，普通に
 
 ```
 $ yarn install
@@ -36,19 +38,21 @@ GUIでイベント（レジ画面1個に対応するオブジェクト）を追�
 
 ### 4. Next.js関係
 
-あとは普通にやるだけです．
+ここまでできたら，普通に
 
 ```
 $ yarn build
 ```
 
-でビルドができます．
+でビルドした上で
 
 ```
 $ yarn start
 ```
 
-でサーバが走ります．ポートはデフォルトでは3000番です． `PORT` 環境変数で変えられます．必要に応じて `.env.local` で定義してください．あとはnginxなりApacheからリバースプロキシしてやると良いでしょう．
+とやればサーバが走ります．ポートはデフォルトでは3000番です． `PORT` 環境変数で変えられます．必要に応じて `.env.local` で定義してください．
+
+あとはnginxなりApacheからリバースプロキシしてやると良いでしょう．その際は，通常のHTTPだけでなくWebSocketもあるため https://nginx.org/en/docs/http/websocket.html あるいは https://httpd.apache.org/docs/2.4/mod/mod_proxy_wstunnel.html をやってあげる必要があることに注意してください．
 
 ### 5. その他
 
